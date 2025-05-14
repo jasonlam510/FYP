@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 # Reference market for relevance scoring, e.g. "S&P 500" (fallback if not set)
 MARKET_REFERENCE = os.getenv('MARKET_REFERENCE', 'S&P 500')
-SAVE_INTERVAL = 100
+SAVE_INTERVAL = 500
 
 # Save the CSV when interrupted
 def save_on_interrupt(signal, frame, df, output_csv):
@@ -99,6 +99,7 @@ def annotate_content(input_csv: str, output_csv: str,
     # Process the unprocessed rows
     total_rows = len(df)
     logger.info(f"Total rows to process: {total_rows}")
+    logger.info(f"Start index: {start_idx}")
     counter = 0
 
     # Use tqdm to create a progress bar
@@ -144,8 +145,8 @@ def annotate_content(input_csv: str, output_csv: str,
 
 def run_on_kaggle():
     # Test with the bloomberg dataset
-    input_csv = "data/processed/kaggle/kaggle_sentiment_inserted.csv"
-    output_csv = "data/processed/kaggle/kaggle_annotated.csv"
+    input_csv = "data/processed/kaggle/missing_features.csv"
+    output_csv = "data/processed/kaggle/llm_missing_features.csv"
     annotate_content(input_csv, output_csv, content_name="description")
 
 if __name__ == '__main__':
