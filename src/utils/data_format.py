@@ -1,6 +1,8 @@
 import pandas as pd
 import re
 import string
+from typing import Union, List
+from datetime import datetime, date
 
 def clean_text_column(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
     """
@@ -31,6 +33,36 @@ def clean_text(text: str) -> str:
     # Convert text to lowercase
     text = text.lower()
     return text
+
+def standardize_date(date_value: Union[str, datetime, date]) -> pd.Timestamp:
+    """
+    Standardizes date values to pandas Timestamp format.
+    
+    Args:
+        date_value: Date value in any common format (string, datetime, date)
+        
+    Returns:
+        pd.Timestamp: Standardized timestamp
+    """
+    if isinstance(date_value, pd.Timestamp):
+        return date_value
+    return pd.Timestamp(date_value)
+
+def standardize_dates(dates: Union[List, pd.Series, pd.DatetimeIndex]) -> List[pd.Timestamp]:
+    """
+    Standardizes a list or series of dates to pandas Timestamp format.
+    
+    Args:
+        dates: List, Series, or DatetimeIndex of dates
+        
+    Returns:
+        List[pd.Timestamp]: List of standardized timestamps
+    """
+    if isinstance(dates, pd.Series):
+        dates = dates.tolist()
+    elif isinstance(dates, pd.DatetimeIndex):
+        dates = dates.tolist()
+    return [standardize_date(d) for d in dates]
 
 def convert_datetime_column(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
     """
