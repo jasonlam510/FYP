@@ -1,7 +1,17 @@
+"""
+Utility functions for plotting DataFrame statistics and distributions.
+
+This module provides functions for visualizing and analyzing DataFrame statistics,
+particularly focused on text data analysis and token distributions.
+"""
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from IPython.display import display
 import os
+import seaborn as sns
+from typing import List, Optional, Union
+import tiktoken
 
 def display_duplicate_rows_by_column(df: pd.DataFrame, date_column: str) -> None:
     """
@@ -24,21 +34,17 @@ def display_duplicate_rows_by_column(df: pd.DataFrame, date_column: str) -> None
         print(f"{date_column}: No duplicate rows found.")
 
 
-def plot_distribution_by_year(df: pd.DataFrame, date_column: str, output_dir: str = 'plots') -> None:
+def plot_distribution_by_year(df: pd.DataFrame, date_column: str) -> None:
     """
     Plots the distribution of articles by year based on a datetime column.
 
     Args:
     - df (pd.DataFrame): The pandas dataframe containing the data.
     - date_column (str): The name of the column containing the datetime information.
-    - output_dir (str): Directory to save the plot image.
     
     Returns:
-    - None: Displays the plot and saves it as PNG.
+    - None: Displays the plot.
     """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
     # Convert the date column to datetime format
     df[date_column] = pd.to_datetime(df[date_column], format='%a, %d %b %Y %H:%M:%S GMT')
 
@@ -61,28 +67,21 @@ def plot_distribution_by_year(df: pd.DataFrame, date_column: str, output_dir: st
     for i, v in enumerate(yearly_distribution):
         ax.text(i, v, f'{int(v)}', ha='center', va='bottom', fontsize=10)
 
-    # Save the plot
-    plt.savefig(os.path.join(output_dir, 'yearly_distribution.png'), dpi=300, bbox_inches='tight')
-    print(f"Yearly distribution plot saved to {os.path.join(output_dir, 'yearly_distribution.png')}")
     plt.show()
     plt.close()
 
 
-def plot_description_length_distribution(df: pd.DataFrame, column_name: str, output_dir: str = 'plots') -> None:
+def plot_description_length_distribution(df: pd.DataFrame, column_name: str) -> None:
     """
     Plots the distribution of the length of a specified text column (in number of words).
 
     Args:
     - df (pd.DataFrame): The pandas dataframe containing the column.
     - column_name (str): The name of the column to analyze.
-    - output_dir (str): Directory to save the plot image.
     
     Returns:
-    - None: Displays the plot and saves it as PNG.
+    - None: Displays the plot.
     """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
     # Calculate the number of words in each entry in the specified column
     word_counts = df[column_name].astype(str).apply(lambda x: len(x.split()))
 
@@ -94,27 +93,20 @@ def plot_description_length_distribution(df: pd.DataFrame, column_name: str, out
     plt.xlabel('Number of Words')
     plt.ylabel('Frequency')
     
-    # Save the plot
-    plt.savefig(os.path.join(output_dir, f'{column_name}_word_distribution.png'), dpi=300, bbox_inches='tight')
-    print(f"Word distribution plot saved to {os.path.join(output_dir, f'{column_name}_word_distribution.png')}")
     plt.show()
     plt.close()
 
-def plot_sentiment_score_distribution(df: pd.DataFrame, sentiment_column: str, output_dir: str = 'plots') -> None:
+def plot_sentiment_score_distribution(df: pd.DataFrame, sentiment_column: str) -> None:
     """
     Plots the distribution of sentiment scores (positive, neutral, negative) based on a specified sentiment column.
 
     Args:
     - df (pd.DataFrame): The pandas dataframe containing the sentiment scores.
     - sentiment_column (str): The name of the column containing the sentiment scores.
-    - output_dir (str): Directory to save the plot image.
     
     Returns:
-    - None: Displays the plot and saves it as PNG.
+    - None: Displays the plot.
     """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
     # Plot the distribution of sentiment scores
     plt.figure(figsize=(10, 6))
     df[sentiment_column].hist(bins=50, color='skyblue', edgecolor='black')
@@ -123,27 +115,20 @@ def plot_sentiment_score_distribution(df: pd.DataFrame, sentiment_column: str, o
     plt.xlabel('Sentiment Score')
     plt.ylabel('Frequency')
     
-    # Save the plot
-    plt.savefig(os.path.join(output_dir, f'{sentiment_column}_distribution.png'), dpi=300, bbox_inches='tight')
-    print(f"Sentiment score distribution plot saved to {os.path.join(output_dir, f'{sentiment_column}_distribution.png')}")
     plt.show()
     plt.close()
 
-def plot_avg_per_day_by_year(df: pd.DataFrame, date_column: str, output_dir: str = 'plots') -> None:
+def plot_avg_per_day_by_year(df: pd.DataFrame, date_column: str) -> None:
     """
     Plots the average number of data points per day for each year based on a datetime column.
 
     Args:
     - df (pd.DataFrame): The pandas dataframe containing the data.
     - date_column (str): The name of the column containing the datetime information.
-    - output_dir (str): Directory to save the plot image.
     
     Returns:
-    - None: Displays the plot and saves it as PNG.
+    - None: Displays the plot.
     """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
     # Convert the date column to datetime format
     df[date_column] = pd.to_datetime(df[date_column])
 
@@ -170,11 +155,101 @@ def plot_avg_per_day_by_year(df: pd.DataFrame, date_column: str, output_dir: str
     for i, v in enumerate(avg_per_day):
         ax.text(i, v, f'{v:.2f}', ha='center', va='bottom', fontsize=10)
 
-    # Save the plot
-    plt.savefig(os.path.join(output_dir, 'avg_per_day_by_year.png'), dpi=300, bbox_inches='tight')
-    print(f"Average number of data points per day by year plot saved to {os.path.join(output_dir, 'avg_per_day_by_year.png')}")
     plt.show()
     plt.close()
 
     # Clean up temporary columns
     df.drop(['year', 'date_only'], axis=1, inplace=True, errors='ignore')
+
+def plot_token_distribution(
+    df: pd.DataFrame,
+    columns: Union[str, List[str]],
+    tokenizer_name: str = "cl100k_base",
+    figsize: tuple = (15, 5),
+    bins: int = 50,
+    title: Optional[str] = None
+) -> None:
+    """
+    Plot token distribution for specified columns in a DataFrame.
+    
+    Args:
+        df (pd.DataFrame): Input DataFrame containing text columns
+        columns (Union[str, List[str]]): Column name(s) to analyze
+        tokenizer_name (str): Name of the tokenizer to use (default: "cl100k_base")
+        figsize (tuple): Figure size (width, height)
+        bins (int): Number of bins for histogram
+        title (Optional[str]): Custom title for the plot
+    
+    Example:
+        >>> plot_token_distribution(df, ['Headline', 'Article'])
+    """
+    # Convert single column to list
+    if isinstance(columns, str):
+        columns = [columns]
+    
+    # Initialize tokenizer
+    tokenizer = tiktoken.get_encoding(tokenizer_name)
+    
+    # Calculate token counts for each column
+    token_counts = {}
+    for col in columns:
+        token_counts[col] = df[col].apply(lambda x: len(tokenizer.encode(str(x))))
+    
+    # Create figure
+    n_cols = len(columns)
+    fig, axes = plt.subplots(1, n_cols, figsize=figsize)
+    if n_cols == 1:
+        axes = [axes]
+    
+    # Plot distributions
+    for idx, (col, counts) in enumerate(token_counts.items()):
+        sns.histplot(data=counts, bins=bins, ax=axes[idx])
+        axes[idx].set_title(f'Distribution of {col} Tokens')
+        axes[idx].set_xlabel('Number of Tokens')
+        axes[idx].set_ylabel('Count')
+        
+        # Add summary statistics as text
+        stats = counts.describe()
+        stats_text = f"Mean: {stats['mean']:.1f}\nStd: {stats['std']:.1f}\nMax: {stats['max']:.0f}"
+        axes[idx].text(0.95, 0.95, stats_text,
+                      transform=axes[idx].transAxes,
+                      verticalalignment='top',
+                      horizontalalignment='right',
+                      bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    
+    # Set overall title if provided
+    if title:
+        fig.suptitle(title)
+    
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+def print_token_statistics(
+    df: pd.DataFrame,
+    columns: Union[str, List[str]],
+    tokenizer_name: str = "cl100k_base"
+) -> None:
+    """
+    Print token statistics for specified columns in a DataFrame.
+    
+    Args:
+        df (pd.DataFrame): Input DataFrame containing text columns
+        columns (Union[str, List[str]]): Column name(s) to analyze
+        tokenizer_name (str): Name of the tokenizer to use (default: "cl100k_base")
+    
+    Example:
+        >>> print_token_statistics(df, ['Headline', 'Article'])
+    """
+    # Convert single column to list
+    if isinstance(columns, str):
+        columns = [columns]
+    
+    # Initialize tokenizer
+    tokenizer = tiktoken.get_encoding(tokenizer_name)
+    
+    # Calculate and print statistics for each column
+    for col in columns:
+        tokens = df[col].apply(lambda x: len(tokenizer.encode(str(x))))
+        print(f"\n{col} Token Statistics:")
+        print(tokens.describe())
