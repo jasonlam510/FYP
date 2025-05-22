@@ -23,7 +23,7 @@ if not GOOGLE_API_KEY:
 # Initialize the client
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
-def generate_response(
+async def generate_response(
     model: str = "gemini-2.0-flash-lite",
     input_text: str = "",
     temperature: float = 0.0,
@@ -33,7 +33,7 @@ def generate_response(
     print_tokens: bool = True
 ) -> str:
     """
-    Generate a response using Google's Generative AI API.
+    Generate a response using Google's Generative AI API asynchronously.
 
     Args:
         model (str): The model to use (default: "gemini-2.0-flash-lite")
@@ -48,6 +48,39 @@ def generate_response(
 
     Raises:
         Exception: If there's an error in the API call
+    """
+    try:
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            max_output_tokens=max_output_tokens
+        )
+
+        response = await client.aio.models.generate_content(
+            model=model,
+            contents=[input_text],
+            config=config
+        )
+        if print_tokens:
+            logger.info(response.usage_metadata)
+        return response.text
+
+    except Exception as e:
+        logger.error(f"Error generating response: {str(e)}")
+        raise
+
+def generate_response_sync(
+    model: str = "gemini-2.0-flash-lite",
+    input_text: str = "",
+    temperature: float = 0.0,
+    max_output_tokens: int = 100,
+    top_p: float = 0.95,
+    top_k: int = 40,
+    print_tokens: bool = False
+) -> str:
+    """
+    Synchronous version of generate_response using the Google client library.
     """
     try:
         config = types.GenerateContentConfig(
@@ -75,27 +108,19 @@ def main():
     try:
         # Example input
         test_input = """
-        You are a financial‐news analysis assistant. Given only a headline, you must output a valid JSON object with **exactly** these four fields (no extra keys, no prose):
-        
-        - sentiment_score: float between -1 (very negative) and 1 (very positive)  
-        - relevance_score: float between 0 (irrelevant) and 1 (highly relevant to the S&P 500 index)  
+        You are a financial‐news analysis assistant. Given only the Headline of the news, you must output a valid JSON object with exactly these three fields (no extra keys, no prose):
+        - sentiment_score: float between -1 (very negative) and 1 (very positive)
+        - relevance_score: float between 0 (irrelevant) and 1 (highly relevant to the S&P 500)  
         - event_importance: float between 0 (no market impact) and 1 (major market-moving event)  
-        - event_type: one of ["earnings", "merger", "regulatory", "macroeconomic", "scandal", "other"]
+        - event_type: one of ["earnings", "merger", "dividend", "guidance", "regulatory", "macroeconomic", "monetary", "CEO change", "product launch", "supply-chain", "credit", "scandal", "analyst", "sector-wide", "geopolitical", "other"]
 
-        **Headline:** "Russia, Ukraine End Dispute That Cut Gas Supplies"
+        **Headline:** "Orix May Buy U.S. Asset Manager to Enter Equity Market"
 
-        **Output only JSON.** For example:
-
-        {
-        "sentiment_score": 0.42,
-        "relevance_score": 0.88,
-        "event_importance": 0.75,
-        "event_type": "earnings"
-        }
+        **Output only JSON.**
         """
         
         # Generate response with custom parameters
-        response = generate_response(
+        response = generate_response_sync(
             model="gemini-2.0-flash-lite",
             input_text=test_input,
             temperature=0.0,  # Keep deterministic for consistent JSON output
