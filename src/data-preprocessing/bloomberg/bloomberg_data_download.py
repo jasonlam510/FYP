@@ -1,14 +1,19 @@
 """
-Bloomberg Financial News Dataset Preprocessing
+Bloomberg Financial News Dataset Downloader
 
-This script handles the preprocessing of the Bloomberg Financial News Dataset (2006-2013) 
+This script downloads and processes the Bloomberg Financial News Dataset (2006-2013) 
 for our event-based stock prediction project. The dataset contains 446,762 financial news 
 articles that will be used to train our prediction model.
 
 The script:
-1. Loads the Bloomberg Financial News dataset from Hugging Face
-2. Saves the raw data to our local directory structure
-3. Performs initial data exploration and preprocessing steps
+1. Downloads the Bloomberg Financial News dataset from Hugging Face
+2. Saves the raw data to a specified directory (default: /data/raw/bloomberg)
+3. Provides command-line argument support for custom output paths
+4. Performs basic data validation and information display
+
+Usage:
+    python bloomberg_data_download.py
+    python bloomberg_data_download.py --output-path /custom/path
 
 Data Source: https://huggingface.co/datasets/danidanou/Bloomberg_Financial_News
 """
@@ -16,8 +21,7 @@ Data Source: https://huggingface.co/datasets/danidanou/Bloomberg_Financial_News
 import pandas as pd
 import os
 from pathlib import Path
-import logging
-logger = logging.getLogger(__name__)
+import argparse
 
 def create_directory(directory_path: Path) -> None:
     """Create directory if it doesn't exist.
@@ -26,10 +30,13 @@ def create_directory(directory_path: Path) -> None:
         directory_path (Path): Path to the directory to create
     """
     directory_path.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Directory created/verified: {directory_path}")
+    print(f"Directory created/verified: {directory_path}")
 
-def load_and_save_dataset() -> pd.DataFrame:
+def load_and_save_dataset(output_path: Path = None) -> pd.DataFrame:
     """Load the Bloomberg dataset from Hugging Face and save it locally.
+    
+    Args:
+        output_path (Path, optional): Custom path to save the dataset. If None, uses default path.
     
     Returns:
         pd.DataFrame: The loaded dataset
@@ -37,41 +44,47 @@ def load_and_save_dataset() -> pd.DataFrame:
     # Get the script's directory
     script_dir = Path(__file__).parent
     
-    # Create directory for raw data (relative to script location)
-    raw_data_dir = script_dir.parent.parent.parent / "data" / "raw" / "bloomberg"
-    create_directory(raw_data_dir)
+    # Set default output path if not provided
+    if output_path is None:
+        output_path = script_dir.parent.parent.parent / "data" / "raw" / "bloomberg" / "bloomberg_financial_data.parquet"
+    else:
+        output_path = Path(output_path) / "bloomberg_financial_data.parquet"
     
-    # Define the output path
-    output_path = raw_data_dir / "bloomberg_financial_data.parquet"
+    # Create directory for the output path
+    create_directory(output_path.parent)
     
     # Check if the dataset is already downloaded
     if output_path.exists():
-        logger.info(f"Dataset already exists at {output_path}")
-        logger.info("Loading existing dataset...")
+        print(f"Dataset already exists at {output_path}")
+        print("Loading existing dataset...")
         df = pd.read_parquet(output_path)
     else:
         # Load the dataset from Hugging Face
-        logger.info("Loading dataset from Hugging Face...")
+        print("Loading dataset from Hugging Face...")
         df = pd.read_parquet("hf://datasets/danidanou/Bloomberg_Financial_News/bloomberg_financial_data.parquet.gzip")
         
         # Save the raw data
         df.to_parquet(output_path)
-        logger.info(f"Dataset saved to {output_path}")
+        print(f"Dataset saved to {output_path}")
     
-    # Log dataset information
-    logger.info(f"Dataset shape: {df.shape}")
-    logger.info("Columns in the dataset:")
-    logger.info(df.columns.tolist())
+    # Print dataset information
+    print(f"Dataset shape: {df.shape}")
+    print("Columns in the dataset:")
+    print(df.columns.tolist())
     
     return df
 
 def main():
     """Main function to execute the data loading and saving process."""
+    parser = argparse.ArgumentParser(description='Download and process Bloomberg Financial News dataset')
+    parser.add_argument('--output-path', type=str, help='Custom path to save the dataset')
+    args = parser.parse_args()
+    
     try:
-        df = load_and_save_dataset()
-        logger.info("Data loading and saving completed successfully")
+        df = load_and_save_dataset(args.output_path)
+        print("Data loading and saving completed successfully")
     except Exception as e:
-        logger.error(f"An error occurred: {str(e)}")
+        print(f"An error occurred: {str(e)}")
         raise
 
 if __name__ == "__main__":
