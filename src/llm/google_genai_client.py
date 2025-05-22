@@ -30,7 +30,7 @@ async def generate_response(
     max_output_tokens: int = 100,
     top_p: float = 0.95,
     top_k: int = 40,
-    print_tokens: bool = True
+    print_tokens: bool =False
 ) -> str:
     """
     Generate a response using Google's Generative AI API asynchronously.
@@ -103,7 +103,7 @@ def generate_response_sync(
         logger.error(f"Error generating response: {str(e)}")
         raise
 
-def main():
+def test():
     """Example usage of the generate_response function."""
     try:
         # Example input
@@ -136,4 +136,4 @@ def main():
         logger.error(f"Error in main: {str(e)}")
 
 if __name__ == "__main__":
-    main() 
+    test() 
