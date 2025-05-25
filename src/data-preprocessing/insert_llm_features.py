@@ -9,12 +9,12 @@ import asyncio
 from typing import List, Dict, Any
 import time
 sys.path.append(str(Path.cwd()))
-from src.llm.google_genai_client import generate_response
+from src.llm.gemini_client import generate_response
 from tqdm import tqdm
 import logging
 
 # Configure logging
-log_file_path = os.path.join('src', 'llm', 'logs', 'bloomberg.log')
+log_file_path = os.path.join('src', 'llm', 'logs', 'prompt_event.log')
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     filename=log_file_path,
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 MARKET_REFERENCE = os.getenv('MARKET_REFERENCE', 'S&P 500')
-SAVE_INTERVAL = 500
+SAVE_INTERVAL = 10000
 MAX_CONCURRENT_TASKS = 500 # Match API's AFC limit
 MAX_RPM = 4000  # Maximum requests per minute
 REQUEST_INTERVAL = 60 / MAX_RPM  # Time to wait between requests in seconds
@@ -200,7 +200,7 @@ async def annotate_content_async(input_csv: str, output_csv: str,
         for result in results:
             idx = result['idx']
             if 'error' not in result:
-                df.at[idx, 'sentiment_score'] = result.get('sentiment_score')
+                df.at[idx, 'sentiment_score_llm'] = result.get('sentiment_score')
                 df.at[idx, 'relevance_score'] = result.get('relevance_score')
                 df.at[idx, 'event_importance'] = result.get('event_importance')
                 df.at[idx, 'event_type'] = result.get('event_type')
@@ -226,9 +226,9 @@ def annotate_content(input_csv: str, output_csv: str,
                                      max_output_tokens, top_p, top_k, content_name))
 
 def run_on_bloomberg():
-    input_csv = "data/processed/bloomberg/sentiment_inserted.csv"
-    output_csv = "data/processed/bloomberg/llm_bloomberg.csv"
-    annotate_content(input_csv, output_csv, content_name="Headline")
+    input_csv = "src/data-preprocessing/finbert_sentiment_inserted.csv"
+    output_csv = "src/data-preprocessing/finbert_llm_sentiment_inserted.csv"
+    annotate_content(input_csv, output_csv, content_name="article")
 
 if __name__ == '__main__':
     run_on_bloomberg()
