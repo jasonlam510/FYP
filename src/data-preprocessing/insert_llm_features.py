@@ -156,7 +156,7 @@ async def process_batch(df: pd.DataFrame, start_idx: int, end_idx: int,
     tasks = []
     for idx in range(start_idx, end_idx):
         row = df.iloc[idx]
-        if not row[['sentiment_score', 'relevance_score', 'event_importance', 'event_type']].isnull().any():
+        if not row[['sentiment_score_llm', 'relevance_score', 'event_importance', 'event_type']].isnull().any():
             continue
         task = process_row(row, idx, content_name, model, temperature, max_output_tokens, top_p, top_k)
         tasks.append(task)
@@ -178,11 +178,11 @@ async def annotate_content_async(input_csv: str, output_csv: str,
     # Load or create DataFrame
     if os.path.exists(output_csv):
         df = pd.read_csv(output_csv)
-        unprocessed_rows = df[df[['sentiment_score', 'relevance_score', 'event_importance', 'event_type']].isnull().any(axis=1)]
+        unprocessed_rows = df[df[['sentiment_score_llm', 'relevance_score', 'event_importance', 'event_type']].isnull().any(axis=1)]
         start_idx = unprocessed_rows.index.min()
     else:
         df = pd.read_csv(input_csv)
-        df[['sentiment_score', 'relevance_score', 'event_importance', 'event_type']] = None
+        df[['sentiment_score_llm', 'relevance_score', 'event_importance', 'event_type']] = None
         df.to_csv(output_csv, index=False)
         start_idx = 0
 

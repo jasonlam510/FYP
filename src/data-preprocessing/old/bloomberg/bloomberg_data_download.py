@@ -23,6 +23,12 @@ import os
 from pathlib import Path
 import argparse
 
+# Constants
+# BLOOMBERG_DATASET_URL = "hf://datasets/danidanou/Bloomberg_Financial_News/bloomberg_financial_data.parquet.gzip"
+BLOOMBERG_DATASET_URL = "hf://datasets/danidanou/Reuters_Financial_News/summ_financial_data.parquet.gzip"
+DEFAULT_OUTPUT_FILENAME = "reuters_financial_data.parquet"
+DEFAULT_OUTPUT_SUBPATH = Path("data") / "raw" / "bloomberg"
+
 def create_directory(directory_path: Path) -> None:
     """Create directory if it doesn't exist.
     
@@ -46,9 +52,9 @@ def load_and_save_dataset(output_path: Path = None) -> pd.DataFrame:
     
     # Set default output path if not provided
     if output_path is None:
-        output_path = script_dir.parent.parent.parent / "data" / "raw" / "bloomberg" / "bloomberg_financial_data.parquet"
+        output_path = script_dir.parent.parent.parent / DEFAULT_OUTPUT_SUBPATH / DEFAULT_OUTPUT_FILENAME
     else:
-        output_path = Path(output_path) / "bloomberg_financial_data.parquet"
+        output_path = Path(output_path) / DEFAULT_OUTPUT_FILENAME
     
     # Create directory for the output path
     create_directory(output_path.parent)
@@ -57,11 +63,11 @@ def load_and_save_dataset(output_path: Path = None) -> pd.DataFrame:
     if output_path.exists():
         print(f"Dataset already exists at {output_path}")
         print("Loading existing dataset...")
-        df = pd.read_parquet(output_path)
+        df = pd.read_parquet(output_path, engine='auto', date_format='ISO8601')
     else:
         # Load the dataset from Hugging Face
         print("Loading dataset from Hugging Face...")
-        df = pd.read_parquet("hf://datasets/danidanou/Bloomberg_Financial_News/bloomberg_financial_data.parquet.gzip")
+        df = pd.read_parquet(BLOOMBERG_DATASET_URL, engine='auto', date_format='ISO8601')
         
         # Save the raw data
         df.to_parquet(output_path)
