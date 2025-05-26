@@ -42,34 +42,56 @@ async def add_sentiment_scores(df: pd.DataFrame, column_name: str) -> pd.DataFra
         column_name (str): Name of the column containing text to analyze
         
     Returns:
-        pd.DataFrame: DataFrame with added sentiment scores
+        pd.DataFrame: DataFrame with added sentiment scores:
+            - sentiment_score_finbert: Combined score between -1 and 1
+            - sentiment_positive_finbert: Raw positive sentiment score
+            - sentiment_neutral_finbert: Raw neutral sentiment score
+            - sentiment_negative_finbert: Raw negative sentiment score
     """
     logger.info("Starting sentiment analysis...")
     
-    # Create empty list to hold the final sentiment scores
+    # Create empty lists to hold the sentiment scores
     sentiment_scores = []
+    positive_scores = []
+    neutral_scores = []
+    negative_scores = []
     
     # Process texts in batches to allow for async operation
     batch_size = 10
-    for i in range(0, len(df), batch_size):
-        batch_texts = df[column_name].iloc[i:i+batch_size]
-        
-        # Process batch
-        for text in tqdm(batch_texts, desc=f"Processing batch {i//batch_size + 1}", unit="text"):
-            # Run sentiment analysis in a thread pool to avoid blocking
-            result = await asyncio.get_event_loop().run_in_executor(None, pipe, text)
-            
-            # Extract scores for positive, neutral, and negative sentiments
-            positive_score = next(item['score'] for item in result[0] if item['label'] == 'positive')
-            neutral_score = next(item['score'] for item in result[0] if item['label'] == 'neutral')
-            negative_score = next(item['score'] for item in result[0] if item['label'] == 'negative')
-            
-            # Calculate and append the combined sentiment score
-            sentiment_score = sentiment_to_score(positive_score, neutral_score, negative_score)
-            sentiment_scores.append(sentiment_score)
+    total_texts = len(df)
     
-    # Add only the final sentiment score to the DataFrame
+    # Create a single progress bar for all texts
+    with tqdm(total=total_texts, desc="Processing texts", unit="text") as pbar:
+        for i in range(0, total_texts, batch_size):
+            batch_texts = df[column_name].iloc[i:i+batch_size]
+            
+            # Process batch
+            for text in batch_texts:
+                # Run sentiment analysis in a thread pool to avoid blocking
+                result = await asyncio.get_event_loop().run_in_executor(None, pipe, text)
+                
+                # Extract scores for positive, neutral, and negative sentiments
+                positive_score = next(item['score'] for item in result[0] if item['label'] == 'positive')
+                neutral_score = next(item['score'] for item in result[0] if item['label'] == 'neutral')
+                negative_score = next(item['score'] for item in result[0] if item['label'] == 'negative')
+                
+                # Store individual scores
+                positive_scores.append(positive_score)
+                neutral_scores.append(neutral_score)
+                negative_scores.append(negative_score)
+                
+                # Calculate and append the combined sentiment score
+                sentiment_score = sentiment_to_score(positive_score, neutral_score, negative_score)
+                sentiment_scores.append(sentiment_score)
+                
+                # Update progress bar
+                pbar.update(1)
+    
+    # Add all scores to the DataFrame
     df['sentiment_score_finbert'] = sentiment_scores
+    df['sentiment_positive_finbert'] = positive_scores
+    df['sentiment_neutral_finbert'] = neutral_scores
+    df['sentiment_negative_finbert'] = negative_scores
     
     logger.info("Sentiment analysis completed")
     return df
@@ -123,6 +145,15 @@ async def test_sentiment_analysis():
     logger.info(f"Max sentiment: {df_with_sentiment['sentiment_score_finbert'].max():.3f}")
     
     return df_with_sentiment
+
+def test_csv(): 
+    csv_path = "data/processed/combined_with_sentiment.csv"
+    output_path = "data/processed/combined_with_sentiment_finbert.csv"
+    df = pd.read_csv(csv_path)
+    df.head()
+    df = add_sentiment_scores(df, 'headline')
+    df.to_csv(output_path, index=False)
+    return df
 
 if __name__ == "__main__":
     asyncio.run(test_sentiment_analysis())
