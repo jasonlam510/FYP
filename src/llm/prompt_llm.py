@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 import sys
 from pathlib import Path
 sys.path.append(str(Path.cwd()))
-from src.llm.google_genai_client import generate_response
+from src.llm.gemini_client import generate_response
 from src.utils.rate_limiter import RateLimiter
 from src.utils.logger import setup_logging
 
