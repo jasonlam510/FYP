@@ -34,49 +34,37 @@ def clean_text(text: str) -> str:
     text = text.lower()
     return text
 
-def standardize_date(date_value: Union[str, datetime, date]) -> pd.Timestamp:
+def convert_datetime_column(df: pd.DataFrame, column_name: str, target_tz: str = 'US/Eastern') -> pd.DataFrame:
     """
-    Standardizes date values to pandas Timestamp format.
+    Standardizes and converts a datetime column to ISO 8601 format with specified timezone.
+    Handles both timezone-naive and timezone-aware data.
+
+    Args:
+        df (pd.DataFrame): The pandas dataframe containing the column to convert.
+        column_name (str): The name of the column to convert.
+        target_tz (str): Target timezone to convert to. Defaults to 'US/Eastern'.
+
+    Returns:
+        pd.DataFrame: The original dataframe with the specified column converted to ISO 8601 format.
+    """
+    # Create a copy to avoid modifying the original
+    df = df.copy()
     
-    Args:
-        date_value: Date value in any common format (string, datetime, date)
-        
-    Returns:
-        pd.Timestamp: Standardized timestamp
-    """
-    if isinstance(date_value, pd.Timestamp):
-        return date_value
-    return pd.Timestamp(date_value)
-
-def standardize_dates(dates: Union[List, pd.Series, pd.DatetimeIndex]) -> List[pd.Timestamp]:
-    """
-    Standardizes a list or series of dates to pandas Timestamp format.
+    # Convert to datetime if not already
+    df[column_name] = pd.to_datetime(df[column_name], errors='coerce')
     
-    Args:
-        dates: List, Series, or DatetimeIndex of dates
-        
-    Returns:
-        List[pd.Timestamp]: List of standardized timestamps
-    """
-    if isinstance(dates, pd.Series):
-        dates = dates.tolist()
-    elif isinstance(dates, pd.DatetimeIndex):
-        dates = dates.tolist()
-    return [standardize_date(d) for d in dates]
-
-def convert_datetime_column(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
-    """
-    Converts a column containing datetime information into a consistent ISO 8601 format.
-    Extracts additional time features (year, month, day, etc.) for easier analysis.
-
-    Args:
-    - df (pd.DataFrame): The pandas dataframe containing the column to convert.
-    - column_name (str): The name of the column to convert.
-
-    Returns:
-    - pd.DataFrame: The original dataframe with the specified column converted and new time features added.
-    """
-    # Convert the column to datetime format
-    df[column_name] = pd.to_datetime(df[column_name], utc=True, errors='coerce')  # 'coerce' to handle invalid dates
+    # Handle timezone conversion
+    if df[column_name].dt.tz is None:
+        # If timezone-naive, localize to target timezone
+        df[column_name] = df[column_name].dt.tz_localize(target_tz, ambiguous='NaT', nonexistent='NaT')
+    else:
+        # If already timezone-aware, convert to target timezone
+        df[column_name] = df[column_name].dt.tz_convert(target_tz)
+    
+    # Drop any rows with NaT (Not a Time) values due to DST transitions
+    df = df.dropna(subset=[column_name])
+    
+    # Convert to ISO 8601 format
+    df[column_name] = pd.to_datetime(df[column_name], format='ISO8601', errors='coerce')
     
     return df
