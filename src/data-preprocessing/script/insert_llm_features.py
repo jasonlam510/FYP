@@ -8,8 +8,7 @@ from pathlib import Path
 import asyncio
 from typing import List, Dict, Any
 import time
-sys.path.append(str(Path.cwd()))
-from src.llm.gemini_client import generate_response
+from gemini_client import generate_response
 from tqdm import tqdm
 import logging
 
