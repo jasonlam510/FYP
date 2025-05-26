@@ -4,6 +4,8 @@ backup/
 *.parquet
 *.png
 *.h5
+*.keras
+
 
 # Created by https://www.gitignore.io/api/macos,linux,django,python,pycharm
 .idea/
