@@ -88,7 +88,7 @@ def download_finance_data(
     
     # Set default output path if not provided
     if output_path is None:
-        output_path = script_dir.parent.parent.parent / "data" / "raw" / "yf" / f"{symbol.replace('^', '')}_{interval}_new.csv"
+        output_path = script_dir.parent.parent.parent / "data" / "raw" / "yf" / f"{symbol.replace('^', '')}_{interval}.csv"
     else:
         output_path = Path(output_path)
     
@@ -124,7 +124,7 @@ def main():
     """Main function to execute the data downloading process."""
     parser = argparse.ArgumentParser(description='Download financial data from Yahoo Finance')
     parser.add_argument('--symbol', type=str, default='^SPX', help='Stock symbol (e.g., ^SPX)')
-    parser.add_argument('--start-date', type=str, default='2006-10-20', help='Start date (YYYY-MM-DD)')
+    parser.add_argument('--start-date', type=str, default='2006-08-20', help='Start date (YYYY-MM-DD)')
     parser.add_argument('--end-date', type=str, default='2013-11-26', help='End date (YYYY-MM-DD)')
     parser.add_argument('--interval', type=str, default='1d', help='Data interval (1d for daily, 1h for hourly)')
     parser.add_argument('--output-path', type=str, help='Custom path to save the data')
