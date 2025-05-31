@@ -8,7 +8,7 @@ def aggregate_news_price_rolling_llm(
     n_days: int = 3,
     half_life_days: float = 1.5,
     agg_method: str = 'sum',
-    count_per_type: bool = False
+    count_per_type: bool = True
 ):
     """
     For each trading day, aggregate news from the previous n_days (including the current day).
