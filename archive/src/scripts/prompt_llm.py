@@ -9,12 +9,12 @@ import asyncio
 from typing import List, Dict, Any
 import time
 sys.path.append(str(Path.cwd()))
-from src.llm.gemini_client import generate_response
+from archive.src.llm.gemini_client import generate_response
 from tqdm import tqdm
 import logging
 
 # Configure logging
-log_file_path = os.path.join('src', 'llm', 'logs', 'prompt_summary.log')
+log_file_path = os.path.join('archive', 'logs', 'insert_llm.log')
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     filename=log_file_path,
@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 MARKET_REFERENCE = os.getenv('MARKET_REFERENCE', 'S&P 500')
-SAVE_INTERVAL = 10000
-MAX_CONCURRENT_TASKS = 500 # Match API's AFC limit
+SAVE_INTERVAL = 50000
+MAX_CONCURRENT_TASKS = 500 
 MAX_RPM = 4000  # Maximum requests per minute
 REQUEST_INTERVAL = 60 / MAX_RPM  # Time to wait between requests in seconds
 
@@ -151,7 +151,7 @@ async def process_batch(df: pd.DataFrame, start_idx: int, end_idx: int,
                        content_name: str, model: str, temperature: float, max_output_tokens: int,
                        top_p: float, top_k: int) -> List[Dict[str, Any]]:
     """
-    Process a batch of rows concurrently.
+    Process a batch of rows concurrently with enhanced error handling.
     """
     tasks = []
     for idx in range(start_idx, end_idx):
@@ -160,7 +160,19 @@ async def process_batch(df: pd.DataFrame, start_idx: int, end_idx: int,
             continue
         task = process_row(row, idx, content_name, model, temperature, max_output_tokens, top_p, top_k)
         tasks.append(task)
-    return await asyncio.gather(*tasks)
+    
+    try:
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        processed_results = []
+        for result in results:
+            if isinstance(result, Exception):
+                logger.error(f"Batch processing error: {str(result)}")
+                continue
+            processed_results.append(result)
+        return processed_results
+    except Exception as e:
+        logger.error(f"Batch processing failed: {str(e)}")
+        return []
 
 async def annotate_content_async(input_csv: str, output_csv: str,
                                model: str = "gemini-2.0-flash-lite",
@@ -170,7 +182,7 @@ async def annotate_content_async(input_csv: str, output_csv: str,
                                top_k: int = 1,
                                content_name: str = "headline"):
     """
-    Asynchronous version of annotate_content.
+    Asynchronous version of annotate_content with enhanced progress tracking.
     """
     # Set up the signal handler
     signal.signal(signal.SIGINT, lambda signal, frame: save_on_interrupt(signal, frame, df, output_csv))
@@ -178,11 +190,11 @@ async def annotate_content_async(input_csv: str, output_csv: str,
     # Load or create DataFrame
     if os.path.exists(output_csv):
         df = pd.read_csv(output_csv)
-        unprocessed_rows = df[df[['sentiment_score', 'relevance_score', 'event_importance', 'event_type']].isnull().any(axis=1)]
+        unprocessed_rows = df[df[['sentiment_score_llm', 'relevance_score', 'event_importance', 'event_type']].isnull().any(axis=1)]
         start_idx = unprocessed_rows.index.min()
     else:
         df = pd.read_csv(input_csv)
-        df[['sentiment_score', 'relevance_score', 'event_importance', 'event_type']] = None
+        df[['sentiment_score_llm', 'relevance_score', 'event_importance', 'event_type']] = None
         df.to_csv(output_csv, index=False)
         start_idx = 0
 
@@ -190,7 +202,11 @@ async def annotate_content_async(input_csv: str, output_csv: str,
     logger.info(f"Total rows to process: {total_rows}")
     logger.info(f"Start index: {start_idx}")
     logger.info(f"Using {MAX_CONCURRENT_TASKS} concurrent tasks (API AFC limit)")
-    counter = 0
+    
+    # Enhanced progress tracking
+    successful_requests = 0
+    failed_requests = 0
+    start_time = time.time()
 
     for batch_start in tqdm(range(start_idx, total_rows, MAX_CONCURRENT_TASKS), desc="Processing batches"):
         batch_end = min(batch_start + MAX_CONCURRENT_TASKS, total_rows)
@@ -204,13 +220,24 @@ async def annotate_content_async(input_csv: str, output_csv: str,
                 df.at[idx, 'relevance_score'] = result.get('relevance_score')
                 df.at[idx, 'event_importance'] = result.get('event_importance')
                 df.at[idx, 'event_type'] = result.get('event_type')
-                counter += 1
-                if counter % SAVE_INTERVAL == 0:
-                    df.to_csv(output_csv, index=False)
-                    logger.info(f"Annotated CSV saved to {output_csv}")
+                successful_requests += 1
+            else:
+                failed_requests += 1
+                logger.error(f"Failed to process row {idx}: {result.get('error')}")
+            
+            if (successful_requests + failed_requests) % SAVE_INTERVAL == 0:
+                df.to_csv(output_csv, index=False)
+                elapsed_time = time.time() - start_time
+                success_rate = (successful_requests / (successful_requests + failed_requests)) * 100
+                logger.info(f"Progress update - Successful: {successful_requests}, Failed: {failed_requests}, "
+                          f"Success rate: {success_rate:.2f}%, Elapsed time: {elapsed_time:.2f}s")
+                logger.info(f"Annotated CSV saved to {output_csv}")
 
     df.to_csv(output_csv, index=False)
-    logger.info(f"Annotated CSV saved to {output_csv}")
+    total_time = time.time() - start_time
+    logger.info(f"Processing completed - Total successful: {successful_requests}, "
+                f"Total failed: {failed_requests}, Total time: {total_time:.2f}s")
+    logger.info(f"Final CSV saved to {output_csv}")
 
 def annotate_content(input_csv: str, output_csv: str,
                     model: str = "gemini-2.0-flash-lite",
@@ -226,9 +253,9 @@ def annotate_content(input_csv: str, output_csv: str,
                                      max_output_tokens, top_p, top_k, content_name))
 
 def run_on_bloomberg():
-    input_csv = "src/data-preprocessing/finbert_sentiment_inserted.csv"
-    output_csv = "src/data-preprocessing/finbert_llm_sentiment_inserted.csv"
-    annotate_content(input_csv, output_csv, content_name="headline")
+    input_csv = "data/finbert_sentiment_inserted.csv"
+    output_csv = "data/finbert_llm_sentiment_inserted.csv"
+    annotate_content(input_csv, output_csv, content_name="article")
 
 if __name__ == '__main__':
     run_on_bloomberg()
