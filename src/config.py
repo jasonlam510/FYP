@@ -18,12 +18,12 @@ EVENT_TYPES = [
 
 # Model training parameters
 SEQ_LENGTH = 10
-N_TRIALS = 20
+N_TRIALS = 50
 HALF_LIFE_RANGE = (0.5, 10.0)
 N_DAYS_RANGE = (1, 10)
 
-# Technical indicators configuration
-INDICATORS = [
+# Technical Indicators for Price Data
+BALANCED_INDICATORS = [
     {'name': 'bb', 'window': 20},          # Bollinger Bands
     {'name': 'ma', 'window': 50},          # Simple Moving Average
     {'name': 'ema', 'window': 12},         # Exponential Moving Average
@@ -37,4 +37,24 @@ INDICATORS = [
     {'name': 'obv'},                       # On-Balance Volume
     {'name': 'mfi', 'window': 14},         # Money Flow Index
     {'name': 'vwap'}                       # Volume-Weighted Average Price
+]
+
+MULTI_TIMEFRAME_INDICATORS = [
+    {'name': 'ema',        'window': 5},    # fast EMA for very short-term momentum
+    {'name': 'roc',        'window': 5},    # 5-period Rate of Change for quick swings
+    {'name': 'rsi',        'window': 14},   # Relative Strength Index for short-term momentum
+    {'name': 'stochastic', 'window': 14},   # Stochastic oscillator (%K)
+    {'name': 'atr',        'window': 14},   # Average True Range for short-term volatility
+    {'name': 'ma',         'window': 20},   # 20-period SMA for mid-term trend
+    {'name': 'bb',         'window': 20},   # 20-period Bollinger Bands
+    {'name': 'macd',       'window': 26},   # MACD slow window (fast=12, signal=9)
+    {'name': 'adx',        'window': 14},   # Average Directional Index for trend strength
+    {'name': 'mfi',        'window': 14},   # Money Flow Index for volume-price interplay
+    {'name': 'vortex',     'window': 14},   # Vortex Indicator for trend confirmation
+    {'name': 'ma',         'window': 50},   # 50-period SMA for longer-term trend
+    {'name': 'ema',        'window': 50},   # 50-period EMA
+    {'name': 'ma',         'window': 200},  # 200-period SMA for very long-term trend
+    {'name': 'cci',        'window': 50},   # Commodity Channel Index for cyclical deviations
+    {'name': 'obv'},                       # On-Balance Volume (cumulative) for volume confirmation
+    {'name': 'vwap'}                       # Volume-Weighted Average Price for intraday anchoring
 ] 
