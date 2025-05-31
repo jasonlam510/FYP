@@ -2,9 +2,43 @@
 
 This is the BSCCS Final Year Project 2024-2025 "Event-based Stock Prediction" supervised by [Prof ZHANG, Qingfu](https://scholars.cityu.edu.hk/en/persons/qingfu-zhang(a25373cf-62a1-4697-ad08-43678bcbf3f2).html)
 
+## Project Overview
+
+This project implements a financial market prediction system that compares different approaches to sentiment analysis and model architectures for predicting stock prices. The system leverages both traditional financial sentiment analysis (FinBERT) and modern Large Language Models (LLM) to analyze news sentiment and predict market movements.
+
+### Key Features
+- Event-based analysis with different event types (earnings, mergers, etc.)
+- Technical indicators for price data
+- Rolling window aggregation of news sentiment
+- Hyperparameter optimization using Optuna
+- Comprehensive logging and metrics tracking
+
+### Model Architecture
+- LSTM (Long Short-Term Memory)
+- LSTM-CNN (Hybrid model combining CNN and LSTM)
+- Both models trained on:
+  - FinBERT sentiment data
+  - LLM sentiment data
+
+### Project Structure
+```
+src/
+├── data/
+│   ├── news.py      # News data handling
+│   ├── price.py     # Price data handling
+│   └── mi.py        # Market indicators
+├── model/
+│   └── train_model.py  # Model training logic
+├── utils/
+│   ├── logger.py    # Logging utilities
+│   └── combine.py   # Data combination utilities
+└── jobs/
+    └── finbert_vs_llm.py  # Main comparison job
+```
+
 # Dataset
 
-This project utilizes several comprehensive financial news datasets:
+This project utilizes several comprehensive financial datasets:
 
 1. **Reuters Financial News Dataset** (2006-2013)
    - Contains 105,359 financial news articles
@@ -20,10 +54,16 @@ This project utilizes several comprehensive financial news datasets:
 
 3. **S&P 500 Dataset** (1927-2025)
    - File: `sap500.csv`
-   - Description: Contains historical data for S&P 500 companies.
+   - Description: Contains historical data for S&P 500 companies
    - Source: [Kaggle's S&P 500 Historical Data](https://www.kaggle.com/datasets/paveljurke/s-and-p-500-gspc-historical-data/data)
 
-These datasets will be used to train our prediction model, leveraging the rich information contained in financial news articles to identify market-moving events and their potential impact on stock prices.
+4. **FRED (Federal Reserve Economic Data)**
+   - Economic indicators and market data
+   - Includes various financial and economic metrics
+   - Automatically fetched and updated through the FRED API
+   - Used for additional market context and feature engineering
+
+These datasets are used to train our prediction models, leveraging the rich information contained in financial news articles and market data to identify market-moving events and their potential impact on stock prices.
 
 # Archive
 

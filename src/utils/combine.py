@@ -1,12 +1,14 @@
 import pandas as pd
 import numpy as np
 
-def aggregate_news_price_rolling(
+def aggregate_news_price_rolling_llm(
     news_df: pd.DataFrame,
     price_df: pd.DataFrame,
     event_types: list,
     n_days: int = 3,
-    half_life_days: float = 1.5
+    half_life_days: float = 1.5,
+    agg_method: str = 'sum',
+    count_per_type: bool = False
 ):
     """
     For each trading day, aggregate news from the previous n_days (including the current day).
@@ -16,8 +18,10 @@ def aggregate_news_price_rolling(
         event_types: List of all possible event types
         n_days: Number of days in the rolling window
         half_life_days: Half-life for exponential decay (in days)
+        agg_method: Method to aggregate sentiment scores ('sum', 'mean', 'median', 'max', 'min')
+        count_per_type: If True, include news count per event type in addition to total count
     Returns:
-        pd.DataFrame: Aggregated data with one-hot encoded event types and price data
+        pd.DataFrame: Aggregated data with one-hot encoded event types, price data, and news counts
     """
     # Ensure datetime
     news_df = news_df.copy()
@@ -50,6 +54,9 @@ def aggregate_news_price_rolling(
         mask = (news_df['date'] >= window_start) & (news_df['date'] <= window_end)
         news_window = news_df.loc[mask].copy()
 
+        # Add total news count
+        news_count = len(news_window)
+
         # Compute decay factor for each news item (relative to trading day)
         lam = np.log(2) / half_life_days
         delta = (trading_day - news_window['date']).dt.total_seconds() / (24*3600)
@@ -69,9 +76,105 @@ def aggregate_news_price_rolling(
         dummies = pd.get_dummies(news_window['event_type']).reindex(columns=event_types, fill_value=0)
         weighted_dummies = dummies.mul(news_window['weighted_sentiment_llm'], axis=0)
 
-        # Aggregate by sum for this trading day
-        agg_row = weighted_dummies.sum(axis=0)
+        # Aggregate by specified method for this trading day
+        agg_row = weighted_dummies.agg(agg_method)
         agg_row['trading_day'] = trading_day
+        agg_row['news_count'] = news_count
+
+        # Add news count per event type if requested
+        if count_per_type:
+            for event_type in event_types:
+                type_mask = news_window['event_type'] == event_type
+                agg_row[f'news_count_{event_type}'] = type_mask.sum()
+
+        agg_list.append(agg_row)
+
+    # Combine all rows
+    news_agg = pd.DataFrame(agg_list).fillna(0.0)
+
+    # Merge with price data
+    merged_df = pd.merge(
+        price_df,
+        news_agg,
+        on='trading_day',
+        how='left'
+    ).fillna(0.0)
+
+    # Sort by trading day
+    merged_df = merged_df.sort_values('trading_day').reset_index(drop=True)
+
+    return merged_df
+
+def aggregate_news_price_rolling_finbert(
+    news_df: pd.DataFrame,
+    price_df: pd.DataFrame,
+    n_days: int = 3,
+    half_life_days: float = 1.5,
+    agg_method: str = 'sum'
+):
+    """
+    For each trading day, aggregate FinBERT news sentiment from the previous n_days (including the current day).
+    Args:
+        news_df: DataFrame with ['date', 'sentiment_score_finbert', 'sentiment_positive_finbert', 
+                               'sentiment_neutral_finbert', 'sentiment_negative_finbert']
+        price_df: DataFrame with ['date', 'close', 'volume']
+        n_days: Number of days in the rolling window
+        half_life_days: Half-life for exponential decay (in days)
+        agg_method: Method to aggregate sentiment scores ('sum', 'mean', 'median', 'max', 'min')
+    Returns:
+        pd.DataFrame: Aggregated data with FinBERT sentiment scores, price data, and news count
+    """
+    # Ensure datetime
+    news_df = news_df.copy()
+    price_df = price_df.copy()
+    news_df['date'] = pd.to_datetime(news_df['date'], utc=True)
+    price_df['date'] = pd.to_datetime(price_df['date'], utc=True)
+
+    # Prepare price data - convert dates to 4 PM ET trading days
+    price_df['trading_day'] = price_df['date'].apply(
+        lambda x: pd.Timestamp(
+            year=x.year,
+            month=x.month,
+            day=x.day,
+            hour=16,
+            minute=0,
+            second=0,
+            tz='US/Eastern'
+        )
+    )
+
+    # Prepare output list
+    agg_list = []
+
+    for trading_day in price_df['trading_day']:
+        # Define window: n_days before (inclusive)
+        window_start = trading_day - pd.Timedelta(days=n_days-1)
+        window_end = trading_day
+
+        # Select news in the window
+        mask = (news_df['date'] >= window_start) & (news_df['date'] <= window_end)
+        news_window = news_df.loc[mask].copy()
+
+        # Add news count
+        news_count = len(news_window)
+
+        # Compute decay factor for each news item (relative to trading day)
+        lam = np.log(2) / half_life_days
+        delta = (trading_day - news_window['date']).dt.total_seconds() / (24*3600)
+        delta = np.clip(delta, 0, None)
+        news_window['decay'] = np.exp(-lam * delta)
+
+        # Calculate weighted sentiment scores for each sentiment type
+        sentiment_columns = ['sentiment_score_finbert', 'sentiment_positive_finbert', 
+                           'sentiment_neutral_finbert', 'sentiment_negative_finbert']
+        
+        for col in sentiment_columns:
+            news_window[f'weighted_{col}'] = news_window[col] * news_window['decay']
+
+        # Aggregate by specified method for this trading day
+        agg_row = news_window[[f'weighted_{col}' for col in sentiment_columns]].agg(agg_method)
+        agg_row['trading_day'] = trading_day
+        agg_row['news_count'] = news_count
 
         agg_list.append(agg_row)
 

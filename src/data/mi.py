@@ -9,10 +9,14 @@ import certifi
 from datetime import datetime, timedelta
 from typing import List, Optional
 from src.utils.logger import get_logger
+from dotenv import load_dotenv
 
 logger = get_logger(__name__)
 
 DATA_PATH = "data/mi.csv"
+
+# Load environment variables from .env file
+load_dotenv()
 
 class MIData():
     def __init__(self):
@@ -21,10 +25,30 @@ class MIData():
         self._process()
     
     def _import_Data(self):
-        # TODO: Check if the data exist from the DATA_PATH
-        # if exist, use the file
-        # if not exist, fetch it by api
-        pass
+        """Import market impact data from local file or fetch from API if not available."""
+        try:
+            # Check if local file exists
+            if os.path.exists(DATA_PATH):
+                logger.info(f"Loading market impact data from {DATA_PATH}")
+                self.mi_df = pd.read_csv(DATA_PATH)
+                logger.info(f"Successfully loaded data with shape: {self.mi_df.shape}")
+            else:
+                logger.info("Local market impact data not found. Fetching from API...")
+                # Create data directory if it doesn't exist
+                os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
+                
+                # Fetch data from API
+                self._fetch()
+                
+                # Save the fetched data
+                if self.mi_df is not None and not self.mi_df.empty:
+                    self.mi_df.to_csv(DATA_PATH, index=False)
+                    logger.info(f"Saved market impact data to {DATA_PATH}")
+                else:
+                    logger.error("Failed to fetch market impact data from API")
+        except Exception as e:
+            logger.error(f"Error in _import_Data: {str(e)}")
+            raise
     
     def _process(self):
         # Sort by date
@@ -45,14 +69,14 @@ class MIData():
             'INDPRO',          # Producer: Industrial Production
             'BSCURT02USM160S'  # Producer: Capacity Utilisation
        ]
-        self.mi_df = download_multiple_series(series_list)
+        self.mi_df = asyncio.run(_download_multiple_series(series_list))
         
     def get_mi_df(self) -> pd.DataFrame:
         return self.mi_df.copy()
     
 class StouisfedFetcher:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
+    def __init__(self):
+        self.api_key = os.getenv('FRED_API_KEY')
         # Create SSL context with proper certificates
         self.ssl_context = ssl.create_default_context(cafile=certifi.where())
 
@@ -90,7 +114,7 @@ class StouisfedFetcher:
         else:
             return None
 
-async def download_multiple_series(series_list: List[str], period: Optional[str] = None) -> pd.DataFrame:
+async def _download_multiple_series(series_list: List[str], period: Optional[str] = None) -> pd.DataFrame:
     """
     Download multiple series from FRED and combine them into a single DataFrame.
     

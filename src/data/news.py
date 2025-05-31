@@ -1,22 +1,22 @@
 import pandas as pd
 from src.utils.logger import get_logger
+from src.config import NEWS_DATA_PATH
 
 logger = get_logger(__name__)
-
-DATA_PATH = "data/finbert_llm_sentiment_inserted.csv"
 
 class NewsData():
     def __init__(self):
         self.news_df = None
+        self.finbert_df = None
+        self.llm_df = None
         self._import_Data()
         self._process()
         self._split_data()
-
     
     def _import_Data(self):
-        logger.info(f"Import news data from: {DATA_PATH}")
-        self.news_df = pd.read_csv(DATA_PATH)
-        logger.info(f"Successfuly imported: {self.news_df.shape}")
+        logger.info(f"Import news data from: {NEWS_DATA_PATH}")
+        self.news_df = pd.read_csv(NEWS_DATA_PATH)
+        logger.info(f"Successfully imported: {self.news_df.shape}")
     
     def _process(self):
         # Sort by date
@@ -27,8 +27,24 @@ class NewsData():
         self.news_df['date'] = pd.to_datetime(self.news_df['date'], utc=True)
         logger.info("datetime is converted to UTC")
     
+    def _split_data(self):
+        """Split the data into FinBERT and LLM datasets."""
+        # Create FinBERT dataset
+        finbert_columns = ['date', 'sentiment_score_finbert', 'sentiment_positive_finbert', 
+                         'sentiment_neutral_finbert', 'sentiment_negative_finbert']
+        self.finbert_df = self.news_df[finbert_columns].copy()
+        
+        # Create LLM dataset
+        llm_columns = ['date', 'sentiment_score_llm', 'relevance_score', 
+                      'event_importance', 'event_type']
+        self.llm_df = self.news_df[llm_columns].copy()
+        
+        logger.info(f"Split data into FinBERT ({self.finbert_df.shape}) and LLM ({self.llm_df.shape}) datasets")
+    
     def get_finbert_df(self) -> pd.DataFrame:
-        return self.finbert_df['date', 'sentiment_score_finbert', 'sentiment_positive_finbert', 'sentiment_neutral_finbert', 'sentiment_negative_finbert'].copy()
+        """Get the FinBERT dataset."""
+        return self.finbert_df.copy()
     
     def get_llm_df(self) -> pd.DataFrame:
-        return self.llm_df['date', 'sentiment_score_llm', 'relevance_score','event_importance','event_type'].copy()
+        """Get the LLM dataset."""
+        return self.llm_df.copy()
