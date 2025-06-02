@@ -46,5 +46,10 @@ class NewsData():
         return self.finbert_df.copy()
     
     def get_llm_df(self) -> pd.DataFrame:
-        """Get the LLM dataset."""
+        """Get LLM sentiment data with all features."""
         return self.llm_df.copy()
+
+    def get_llm_sentiment_df(self) -> pd.DataFrame:
+        """Get LLM sentiment data with only sentiment scores."""
+        # Select only date and sentiment columns
+        return self.llm_df[['date', 'sentiment_score_llm']].copy()
