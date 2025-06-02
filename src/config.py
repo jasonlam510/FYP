@@ -18,9 +18,9 @@ EVENT_TYPES = [
 
 # Model training parameters
 SEQ_LENGTH = 10
-N_TRIALS = 50
-HALF_LIFE_RANGE = (0.5, 10.0)
-N_DAYS_RANGE = (1, 10)
+N_TRIALS = 30
+HALF_LIFE_RANGE = (0.5, 8.0)
+N_DAYS_RANGE = (1, 3)
 
 # Technical Indicators for Price Data
 BALANCED_INDICATORS = [
