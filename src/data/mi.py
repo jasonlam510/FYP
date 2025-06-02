@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 logger = get_logger(__name__)
 
-DATA_PATH = "data/mi.csv"
+DATA_PATH = "data/test.csv"
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,7 +22,7 @@ class MIData():
     def __init__(self):
         self.mi_df = None
         self._import_Data()
-        self._process()
+        # self._process()
     
     def _import_Data(self):
         """Import market impact data from local file or fetch from API if not available."""
@@ -40,12 +40,12 @@ class MIData():
                 # Fetch data from API
                 self._fetch()
                 
-                # Save the fetched data
-                if self.mi_df is not None and not self.mi_df.empty:
-                    self.mi_df.to_csv(DATA_PATH, index=False)
-                    logger.info(f"Saved market impact data to {DATA_PATH}")
-                else:
-                    logger.error("Failed to fetch market impact data from API")
+                # # Save the fetched data
+                # if self.mi_df is not None and not self.mi_df.empty:
+                #     self.mi_df.to_csv(DATA_PATH, index=False)
+                #     logger.info(f"Saved market impact data to {DATA_PATH}")
+                # else:
+                #     logger.error("Failed to fetch market impact data from API")
         except Exception as e:
             logger.error(f"Error in _import_Data: {str(e)}")
             raise
