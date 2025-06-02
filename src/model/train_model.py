@@ -9,12 +9,13 @@ import optuna
 from sklearn.preprocessing import MinMaxScaler
 from typing import Tuple, Dict, Any, Callable, Union
 from src.utils.logger import get_logger
-from src.utils.combine import aggregate_news_price_rolling_finbert, aggregate_news_price_rolling_llm
+from src.utils.combine import aggregate_news_price_rolling_finbert, aggregate_news_price_rolling_llm, aggregate_news_price_rolling_llm_sentiment
 from src.config import EVENT_TYPES
 import matplotlib.pyplot as plt
 import os
 from datetime import datetime
 import time
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 logger = get_logger(__name__)
 
@@ -91,11 +92,12 @@ def build_cnn_lstm_model(trial, seq_length, n_features):
 
 def build_lstm_model(trial, seq_length, n_features, **kwargs):
     """LSTM model with variable number of LSTM layers."""
-    # Hyperparameters from best trial
-    lstm_layers = 5
-    lstm_units = 67
-    dropout_rate = 0.1294676223336333
-    learning_rate = 0.005698251072263444
+    # LSTM parameters
+    lstm_layers = trial.suggest_int('lstm_layers', 2, 5)
+    lstm_units = trial.suggest_int('lstm_units', 32, 128)
+    dropout_rate = trial.suggest_float('dropout_rate', 0.1, 0.5)
+    learning_rate = trial.suggest_float('learning_rate', 1e-5, 1e-2, log=True)
+    dense_units = trial.suggest_int('dense_units', 16, 64)
 
     model = Sequential()
     model.add(Input(shape=(seq_length, n_features)))
@@ -107,11 +109,73 @@ def build_lstm_model(trial, seq_length, n_features, **kwargs):
         model.add(LSTM(units, return_sequences=return_seq))
         model.add(Dropout(dropout_rate))
 
-    model.add(Dense(32, activation='relu'))
+    model.add(Dense(dense_units, activation='relu'))
     model.add(Dense(1))
 
     model.compile(optimizer=Adam(learning_rate=learning_rate), loss='mse')
     return model
+
+def calculate_metrics(predictions: np.ndarray, actual: np.ndarray, threshold: float = 0.005) -> Dict[str, float]:
+    """
+    Calculate various evaluation metrics for the model predictions.
+    
+    Args:
+        predictions: Array of predicted prices
+        actual: Array of actual prices
+        threshold: Threshold for Directional Change events (default: 0.5%)
+    
+    Returns:
+        Dictionary containing:
+        - RMSE: Root Mean Square Error
+        - MAE: Mean Absolute Error
+        - directional_accuracy: Accuracy of up/down predictions
+        - dc_precision: Precision of Directional Change events
+        - dc_recall: Recall of Directional Change events
+        - dc_timing_error: Average timing error for DC events
+    """
+    # Calculate RMSE and MAE
+    rmse = np.sqrt(mean_squared_error(actual, predictions))
+    mae = mean_absolute_error(actual, predictions)
+    
+    # Calculate directional accuracy
+    pred_changes = np.diff(predictions)
+    actual_changes = np.diff(actual)
+    directional_accuracy = np.mean(np.sign(pred_changes) == np.sign(actual_changes))
+    
+    # Calculate Directional Change (DC) metrics
+    actual_dc = np.abs(np.diff(actual) / actual[:-1]) >= threshold
+    pred_dc = np.abs(np.diff(predictions) / predictions[:-1]) >= threshold
+    
+    # Calculate DC precision and recall
+    true_positives = np.sum(actual_dc & pred_dc)
+    false_positives = np.sum(~actual_dc & pred_dc)
+    false_negatives = np.sum(actual_dc & ~pred_dc)
+    
+    dc_precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
+    dc_recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0
+    
+    # Calculate timing error for DC events
+    dc_timing_error = 0
+    if np.sum(actual_dc) > 0:
+        dc_indices = np.where(actual_dc)[0]
+        timing_errors = []
+        for idx in dc_indices:
+            # Find the closest predicted DC event within a window
+            window = 5  # Look 5 days before and after
+            pred_dc_in_window = np.where(pred_dc[max(0, idx-window):min(len(pred_dc), idx+window)])[0]
+            if len(pred_dc_in_window) > 0:
+                closest_pred = pred_dc_in_window[np.argmin(np.abs(pred_dc_in_window - window))]
+                timing_errors.append(abs(closest_pred - window))
+        dc_timing_error = np.mean(timing_errors) if timing_errors else 0
+    
+    return {
+        'RMSE': rmse,
+        'MAE': mae,
+        'directional_accuracy': directional_accuracy,
+        'dc_precision': dc_precision,
+        'dc_recall': dc_recall,
+        'dc_timing_error': dc_timing_error
+    }
 
 def train_model(
     news_df: pd.DataFrame,
@@ -153,6 +217,7 @@ def train_model(
         - predictions: Model predictions on test set
         - actual: Actual values from test set
         - test_dates: Dates corresponding to test set
+        - metrics: Dictionary containing evaluation metrics
     """
     start_time = time.time()
     logger.info("Starting model training process...")
@@ -166,7 +231,7 @@ def train_model(
         n_days = n_days_range if isinstance(n_days_range, int) else trial.suggest_int('n_days', n_days_range[0], n_days_range[1])
 
         # 2. Aggregate data using the suggested half_life_days
-        # Check if we're using FinBERT or LLM data based on the columns in news_df
+        # Check which type of data we're using
         if 'sentiment_score_finbert' in news_df.columns:
             logger.info("Detected FinBERT data format - using FinBERT aggregation")
             aggregated_df = aggregate_news_price_rolling_finbert(
@@ -175,8 +240,8 @@ def train_model(
                 n_days=n_days,
                 half_life_days=half_life_days
             )
-        else:
-            logger.info("Detected LLM data format - using LLM aggregation")
+        elif 'event_type' in news_df.columns:
+            logger.info("Detected LLM data with event types - using LLM aggregation")
             aggregated_df = aggregate_news_price_rolling_llm(
                 news_df=news_df,
                 price_df=price_df,
@@ -184,6 +249,16 @@ def train_model(
                 n_days=n_days,
                 half_life_days=half_life_days
             )
+        elif 'sentiment_score_llm' in news_df.columns:
+            logger.info("Detected LLM sentiment data - using LLM sentiment aggregation")
+            aggregated_df = aggregate_news_price_rolling_llm_sentiment(
+                news_df=news_df,
+                price_df=price_df,
+                n_days=n_days,
+                half_life_days=half_life_days
+            )
+        else:
+            raise ValueError("Input data must contain either 'sentiment_score_finbert', 'sentiment_score_llm', or 'event_type' column")
 
         # 3. Prepare data for the model
         X_train, X_test, y_train, y_test, scaler, test_dates, numeric_cols = prepare_data_for_model(
@@ -235,7 +310,7 @@ def train_model(
             n_days=n_days,
             half_life_days=best_half_life
         )
-    else:
+    elif 'event_type' in news_df.columns:
         best_aggregated_df = aggregate_news_price_rolling_llm(
             news_df=news_df,
             price_df=price_df,
@@ -243,6 +318,15 @@ def train_model(
             n_days=n_days,
             half_life_days=best_half_life
         )
+    elif 'sentiment_score_llm' in news_df.columns:
+        best_aggregated_df = aggregate_news_price_rolling_llm_sentiment(
+            news_df=news_df,
+            price_df=price_df,
+            n_days=n_days,
+            half_life_days=best_half_life
+        )
+    else:
+        raise ValueError("Input data must contain either 'sentiment_score_finbert', 'sentiment_score_llm', or 'event_type' column")
 
     # 9. Prepare data for the final model
     X_train, X_test, y_train, y_test, scaler, test_dates, numeric_cols = prepare_data_for_model(
@@ -289,32 +373,60 @@ def train_model(
     for k, v in best_params.items():
         logger.info(f"{k}: {v}")
 
+    # Calculate metrics
+    metrics = calculate_metrics(predictions, actual)
+    
+    # Log metrics
+    logger.info("\nModel Evaluation Metrics:")
+    logger.info(f"RMSE = ${metrics['RMSE']:.2f}, MAE = ${metrics['MAE']:.2f} on next-day close")
+    logger.info(f"Directional Accuracy: {metrics['directional_accuracy']:.2%}")
+    logger.info(f"DC Precision: {metrics['dc_precision']:.2%}")
+    logger.info(f"DC Recall: {metrics['dc_recall']:.2%}")
+    logger.info(f"DC Timing Error: {metrics['dc_timing_error']:.2f} days")
+
     total_time = time.time() - start_time
     logger.info(f"Total training process completed in {total_time:.2f} seconds")
 
-    return best_model, history, predictions, actual, test_dates
+    return best_model, history, predictions, actual, test_dates, metrics, best_params
 
-def plot_results(predictions_list, line_names, actual, test_dates, job_name=None):
+def plot_results(predictions_list, line_names, actual, test_dates, metrics_list=None, job_name=None):
     """Plot the results and save the plot to a file."""
     # Create figure
-    fig, ax = plt.subplots(figsize=(15, 10))
-
-    # Plot actual price
-    ax.plot(test_dates, actual, label='Actual', color='blue')
-
-    # Plot each prediction with a different color
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 15), height_ratios=[2, 1])
+    
+    # Plot actual price and predictions
+    ax1.plot(test_dates, actual, label='Actual', color='blue')
     colors = ['red', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan', 'magenta']
     for pred, name, color in zip(predictions_list, line_names, colors):
-        ax.plot(test_dates, pred, label=name, color=color)
-
-    ax.set_title('Actual vs Predicted Stock Prices')
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Price')
-    ax.legend()
-    ax.grid(True)
-
-    # Save the plot
+        ax1.plot(test_dates, pred, label=name, color=color)
+    
+    ax1.set_title('Actual vs Predicted Stock Prices')
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Price')
+    ax1.legend()
+    ax1.grid(True)
+    
+    # Plot directional accuracy if metrics are provided
+    if metrics_list:
+        model_names = line_names
+        metrics = ['RMSE', 'MAE', 'directional_accuracy', 'dc_precision', 'dc_recall']
+        x = np.arange(len(model_names))
+        width = 0.15
+        
+        for i, metric in enumerate(metrics):
+            values = [m[metric] for m in metrics_list]
+            ax2.bar(x + i*width, values, width, label=metric)
+        
+        ax2.set_ylabel('Score')
+        ax2.set_title('Model Comparison Metrics')
+        ax2.set_xticks(x + width*2)
+        ax2.set_xticklabels(model_names)
+        ax2.legend()
+    
+    # Save the plot with timestamp
     os.makedirs('plots', exist_ok=True)
-    plot_filename = f'plots/{job_name}_actual_vs_prediction.png'
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    plot_filename = f'plots/{job_name}_{timestamp}_evaluation.png'
+    plt.tight_layout()
     plt.savefig(plot_filename)
     plt.close() 

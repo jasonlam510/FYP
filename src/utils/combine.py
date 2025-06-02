@@ -229,3 +229,53 @@ def combine_mi_price(mi_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.DataFram
     result = result.reset_index()
     
     return result
+
+def aggregate_news_price_rolling_llm_sentiment(
+    news_df: pd.DataFrame,
+    price_df: pd.DataFrame,
+    n_days: int = 3,
+    half_life_days: float = 1.5
+) -> pd.DataFrame:
+    """
+    Aggregate news sentiment data with price data using exponential decay.
+    This version is specifically for LLM sentiment data without event types.
+    
+    Args:
+        news_df: DataFrame with columns ['date', 'sentiment_score_llm']
+        price_df: DataFrame with columns ['date', 'close', 'volume']
+        n_days: Number of days to look back
+        half_life_days: Half-life for exponential decay
+    
+    Returns:
+        DataFrame with aggregated sentiment scores and price data
+    """
+    # Create a copy of the price data
+    result_df = price_df.copy()
+    
+    # Calculate decay factor
+    decay_factor = np.log(2) / half_life_days
+    
+    # For each date in the price data
+    for i in range(len(result_df)):
+        current_date = result_df.iloc[i]['date']
+        
+        # Get news within the window
+        news_window = news_df[
+            (news_df['date'] <= current_date) & 
+            (news_df['date'] > current_date - pd.Timedelta(days=n_days))
+        ].copy()
+        
+        if len(news_window) > 0:
+            # Calculate time decay
+            news_window['days_old'] = (current_date - news_window['date']).dt.total_seconds() / (24 * 3600)
+            news_window['decay'] = np.exp(-decay_factor * news_window['days_old'])
+            
+            # Calculate weighted sentiment
+            news_window['weighted_sentiment'] = news_window['sentiment_score_llm'] * news_window['decay']
+            
+            # Aggregate sentiment
+            result_df.loc[result_df.index[i], 'sentiment_score_llm'] = news_window['weighted_sentiment'].mean()
+        else:
+            result_df.loc[result_df.index[i], 'sentiment_score_llm'] = 0
+    
+    return result_df
