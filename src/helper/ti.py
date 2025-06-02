@@ -6,7 +6,7 @@ from ta.volume import OnBalanceVolumeIndicator, MFIIndicator
 from ta.trend import CCIIndicator
 from typing import List, Dict
 
-def calculate_technical_indicators(df: pd.DataFrame, indicators: List[Dict]) -> pd.DataFrame:
+def calculate_technical_indicators(price_df: pd.DataFrame, indicators: List[Dict]) -> pd.DataFrame:
     """
     Calculate technical indicators for the given price data using ta library.
     
@@ -27,8 +27,10 @@ def calculate_technical_indicators(df: pd.DataFrame, indicators: List[Dict]) -> 
         ]
         df_with_indicators = calculate_technical_indicators(price_df, indicators)
     """
-    if df is None:
+    if price_df is None:
         raise ValueError("DataFrame is not initialized")
+    
+    df = price_df.copy()
     
     for indicator in indicators:
         name = indicator['name']

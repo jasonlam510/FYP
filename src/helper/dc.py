@@ -44,7 +44,7 @@ def _detect_atr_dc_events(df: pd.DataFrame, atr_window: int = 10, k: float = 1.5
     return pd.DataFrame(events, columns=['event_date', 'event_type', 'event_price', 'threshold', 'atr'])
 
 
-def add_event_features(df: pd.DataFrame,
+def add_dc_event_features(df: pd.DataFrame,
                        atr_window: int = 10,
                        k: float = 1.5,
                        rv_window: int = 10,
@@ -60,17 +60,18 @@ def add_event_features(df: pd.DataFrame,
       - momentum
       - volume_spike_ratio
     """
-    df.set_index('date', inplace=True)
+    price_df = df.copy()
+    price_df.set_index('date', inplace=True)
 
     # 1) Detect events
-    events = _detect_atr_dc_events(df, atr_window, k)
+    events = _detect_atr_dc_events(price_df, atr_window, k)
 
     # 2) Compute overshoot for each event
     overshoots = []
     for idx in range(len(events)-1):
         start = events.loc[idx, 'event_date']
         end = events.loc[idx+1, 'event_date']
-        window = df.loc[start:end]
+        window = price_df.loc[start:end]
         if events.loc[idx, 'event_type'] == 'up':
             extremum = window['high'].max()
             overshoot = (extremum - events.loc[idx, 'event_price']) / events.loc[idx, 'threshold']
@@ -87,20 +88,20 @@ def add_event_features(df: pd.DataFrame,
 
     # 4) Map event features back to daily DataFrame
     for feat in ['overshoot_ratio', 'time_since_last_dc', 'return_since_last_dc', 'atr']:
-        df[feat] = events.set_index('event_date')[feat].reindex(df.index, method='ffill')
+        price_df[feat] = events.set_index('event_date')[feat].reindex(price_df.index, method='ffill')
 
     # 5) Realized volatility: rolling std of daily returns
-    df['realized_volatility'] = df['close'].pct_change().rolling(rv_window).std()
+    price_df['realized_volatility'] = price_df['close'].pct_change().rolling(rv_window).std()
 
     # 6) Momentum: price difference over window
-    df['momentum'] = df['close'] - df['close'].shift(momentum_window)
+    price_df['momentum'] = price_df['close'] - price_df['close'].shift(momentum_window)
 
     # 7) Volume spike ratio
-    df['vol_ma'] = df['volume'].rolling(vol_ma_window).mean()
-    df['volume_spike_ratio'] = df['volume'] / df['vol_ma']
+    price_df['vol_ma'] = price_df['volume'].rolling(vol_ma_window).mean()
+    price_df['volume_spike_ratio'] = price_df['volume'] / price_df['vol_ma']
 
     # clean up helper column
-    df.drop(columns=['vol_ma'], inplace=True)
+    price_df.drop(columns=['vol_ma'], inplace=True)
 
-    df.reset_index(inplace=True)
-    return df
+    price_df.reset_index(inplace=True)
+    return price_df
