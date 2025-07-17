@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 import numpy as np
 import os
@@ -7,24 +8,28 @@ project_root = Path.cwd() # Get the current directory
 sys.path.append(str(project_root))
 
 # Set job name for logging and plots
-JOB_NAME = "llm_dc_mi"
+START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
+os.environ['START_TIME'] = START_TIME
+JOB_NAME = f"llm_dc_mi"
 os.environ['JOB_NAME'] = JOB_NAME
 
 from src.data.news import NewsData
 from src.data.price import PriceData
-from src.data.mi import MIData
 from src.model.train_model import train_model, plot_results, build_cnn_lstm_model, build_lstm_model
-from src.utils.combine import combine_mi_price
+from src.utils.combine import aggregate_news_price_rolling_llm
 from src.helper.ti import calculate_technical_indicators
 from src.helper.dc import add_dc_event_features
 from src.utils.logger import get_logger
 from src.config import (
+    EVENT_TYPES,
     SEQ_LENGTH,
     N_TRIALS,
-    BALANCED_INDICATORS
+    BALANCED_INDICATORS,
+    HALF_LIFE_RANGE,
+    N_DAYS_RANGE
 )
 
-logger = get_logger(__name__)
+logger = get_logger(JOB_NAME)
 
 def print_best_hyperparameters(results):
     """Print the best hyperparameters for each model."""
@@ -34,103 +39,86 @@ def print_best_hyperparameters(results):
         for param_name, param_value in result['best_params'].items():
             logger.info(f"{param_name}: {param_value}")
 
-def run_comparison():
+def run_comparison(use_existing_storage=False):
     # Load data
     logger.info("Loading data...")
-    macro_data = MIData()
     news_data = NewsData()
     price_data = PriceData()
-    
 
-    # Get datasets
+    # Get LLM dataset
     llm_df = news_data.get_llm_df()
     price_df = price_data.get_price_df()
-    macro_df = macro_data.get_mi_df()
-
-    # Add technical indicators to price data
-    logger.info("Adding technical indicators...")
-    price_df = calculate_technical_indicators(price_df, BALANCED_INDICATORS)
-    price_dc_df = add_dc_event_features(price_df)
-
-    # Combine price data with macro indicators
-    logger.info("Combining price data with macro indicators...")
-    price_macro_df = combine_mi_price(macro_df, price_df)
 
     # Dictionary to store results
     results = {}
 
-    # 1. Train LSTM with LLM + Balanced TI + DC
-    logger.info("Training LSTM with LLM + Balanced TI...")
-    lstm_ti_model, lstm_ti_history, lstm_ti_pred, lstm_ti_actual, test_dates, lstm_ti_metrics, lstm_ti_params = train_model(
-        llm_df, price_dc_df, SEQ_LENGTH, N_TRIALS, 
-        build_model_fn=build_lstm_model
-    )
-    results['LSTM-LLM-TI'] = {
-        'predictions': lstm_ti_pred,
-        'actual': lstm_ti_actual,
-        'test_dates': test_dates,
-        'metrics': lstm_ti_metrics,
-        'best_params': lstm_ti_params
+    # Define sub-jobs
+    sub_jobs = {
+        'lstm_dc': {
+            'model_fn': build_lstm_model,
+            'news_df': llm_df,
+            'price_df': price_df,
+            'indicators': BALANCED_INDICATORS,
+            'use_dc': True
+        },
+        'lstm_cnn_dc': {
+            'model_fn': build_cnn_lstm_model,
+            'news_df': llm_df,
+            'price_df': price_df,
+            'indicators': BALANCED_INDICATORS,
+            'use_dc': True
+        },
+        'lstm_mi': {
+            'model_fn': build_lstm_model,
+            'news_df': llm_df,
+            'price_df': price_df,
+            'indicators': BALANCED_INDICATORS,
+            'use_dc': False
+        },
+        'lstm_cnn_mi': {
+            'model_fn': build_cnn_lstm_model,
+            'news_df': llm_df,
+            'price_df': price_df,
+            'indicators': BALANCED_INDICATORS,
+            'use_dc': False
+        }
     }
 
-    # 2. Train LSTM with LLM + Macro
-    logger.info("Training LSTM with LLM + Macro...")
-    lstm_macro_model, lstm_macro_history, lstm_macro_pred, lstm_macro_actual, test_dates, lstm_macro_metrics, lstm_macro_params = train_model(
-        llm_df, price_macro_df, SEQ_LENGTH, N_TRIALS, 
-        build_model_fn=build_lstm_model
-    )
-    results['LSTM-LLM-Macro'] = {
-        'predictions': lstm_macro_pred,
-        'actual': lstm_macro_actual,
-        'test_dates': test_dates,
-        'metrics': lstm_macro_metrics,
-        'best_params': lstm_macro_params
-    }
+    # Train each sub-job
+    for sub_job_name, config in sub_jobs.items():
+        logger.info(f"\nTraining {sub_job_name}...")
+        os.environ['SUB_JOB_NAME'] = sub_job_name
+        
+        # Process price data based on sub-job type
+        price_df_processed = calculate_technical_indicators(config['price_df'].copy(), config['indicators'])
+        if config['use_dc']:
+            price_df_processed = add_dc_event_features(price_df_processed)
 
-    # 3. Train LSTM-CNN with LLM + Balanced TI + DC
-    logger.info("Training LSTM-CNN with LLM + Balanced TI...")
-    lstm_cnn_ti_model, lstm_cnn_ti_history, lstm_cnn_ti_pred, lstm_cnn_ti_actual, test_dates, lstm_cnn_ti_metrics, lstm_cnn_ti_params = train_model(
-        llm_df, price_dc_df, SEQ_LENGTH, N_TRIALS, 
-        build_model_fn=build_cnn_lstm_model
-    )
-    results['LSTM-CNN-LLM-TI'] = {
-        'predictions': lstm_cnn_ti_pred,
-        'actual': lstm_cnn_ti_actual,
-        'test_dates': test_dates,
-        'metrics': lstm_cnn_ti_metrics,
-        'best_params': lstm_cnn_ti_params
-    }
-
-    # 4. Train LSTM-CNN with LLM + Macro
-    logger.info("Training LSTM-CNN with LLM + Macro...")
-    lstm_cnn_macro_model, lstm_cnn_macro_history, lstm_cnn_macro_pred, lstm_cnn_macro_actual, test_dates, lstm_cnn_macro_metrics, lstm_cnn_macro_params = train_model(
-        llm_df, price_macro_df, SEQ_LENGTH, N_TRIALS, 
-        build_model_fn=build_cnn_lstm_model
-    )
-    results['LSTM-CNN-LLM-Macro'] = {
-        'predictions': lstm_cnn_macro_pred,
-        'actual': lstm_cnn_macro_actual,
-        'test_dates': test_dates,
-        'metrics': lstm_cnn_macro_metrics,
-        'best_params': lstm_cnn_macro_params
-    }
+        model, history, pred, actual, test_dates, metrics, params = train_model(
+            news_df=config['news_df'],
+            price_df=price_df_processed,
+            seq_length=SEQ_LENGTH,
+            n_trials=N_TRIALS,
+            build_model_fn=config['model_fn'],
+            half_life_range=HALF_LIFE_RANGE,
+            n_days_range=N_DAYS_RANGE,
+            use_existing_storage=use_existing_storage
+        )
+        
+        results[sub_job_name] = {
+            'predictions': pred,
+            'actual': actual,
+            'test_dates': test_dates,
+            'metrics': metrics,
+            'best_params': params
+        }
 
     # Plot results
-    predictions_list = [
-        results['LSTM-LLM-TI']['predictions'],
-        results['LSTM-LLM-Macro']['predictions'],
-        results['LSTM-CNN-LLM-TI']['predictions'],
-        results['LSTM-CNN-LLM-Macro']['predictions']
-    ]
-    line_names = [
-        'LSTM-LLM-TI',
-        'LSTM-LLM-Macro',
-        'LSTM-CNN-LLM-TI',
-        'LSTM-CNN-LLM-Macro'
-    ]
-    actual = results['LSTM-LLM-TI']['actual']  # All actual values should be the same
-    test_dates = results['LSTM-LLM-TI']['test_dates']
-    metrics_list = [results[model]['metrics'] for model in line_names]
+    predictions_list = [results[model]['predictions'] for model in sub_jobs.keys()]
+    line_names = list(sub_jobs.keys())
+    actual = results['lstm_dc']['actual']  # All actual values should be the same
+    test_dates = results['lstm_dc']['test_dates']
+    metrics_list = [results[model]['metrics'] for model in sub_jobs.keys()]
 
     plot_results(
         predictions_list=predictions_list,
@@ -155,4 +143,9 @@ def run_comparison():
         logger.info(f"DC Timing Error: {metrics['dc_timing_error']:.2f} days")
 
 if __name__ == "__main__":
-    run_comparison() 
+    try:
+        # You can set use_existing_storage=True to use existing Optuna storage
+        run_comparison(use_existing_storage=True)
+    except Exception as e:
+        logger.error(f"Error in {JOB_NAME}: {e}")
+        raise e

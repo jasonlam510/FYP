@@ -52,7 +52,8 @@ class LoggerManager:
         
         # Create file handler - only if this is the first logger for this job
         if self._current_log_file is None:
-            self._current_log_file = f'logs/{job_name}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+            timestamp = os.environ.get('START_TIME', datetime.now().strftime("%Y%m%d_%H%M%S"))
+            self._current_log_file = f'logs/{job_name}_{timestamp}.log'
             file_handler = logging.FileHandler(self._current_log_file)
             file_handler.setLevel(logging.INFO)
             file_handler.setFormatter(formatter)

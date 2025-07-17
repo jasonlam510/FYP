@@ -1,0 +1,319 @@
+=== Best Hyperparameters for Each Model ===
+2025-06-08 05:48:49,027 - llm_dc_mi - INFO - 
+lstm_dc:
+2025-06-08 05:48:49,027 - llm_dc_mi - INFO - half_life_days: 5.8331543876615175
+2025-06-08 05:48:49,028 - llm_dc_mi - INFO - n_days: 2
+2025-06-08 05:48:49,028 - llm_dc_mi - INFO - lstm_layers: 3
+2025-06-08 05:48:49,028 - llm_dc_mi - INFO - lstm_units: 114
+2025-06-08 05:48:49,028 - llm_dc_mi - INFO - dropout_rate: 0.1340704575651917
+2025-06-08 05:48:49,028 - llm_dc_mi - INFO - learning_rate: 0.0009271071407313799
+2025-06-08 05:48:49,029 - llm_dc_mi - INFO - dense_units: 40
+2025-06-08 05:48:49,029 - llm_dc_mi - INFO - 
+lstm_cnn_dc:
+2025-06-08 05:48:49,029 - llm_dc_mi - INFO - half_life_days: 5.9454865297786945
+2025-06-08 05:48:49,030 - llm_dc_mi - INFO - n_days: 1
+2025-06-08 05:48:49,031 - llm_dc_mi - INFO - cnn_filters: 65
+2025-06-08 05:48:49,033 - llm_dc_mi - INFO - cnn_kernel: 3
+2025-06-08 05:48:49,033 - llm_dc_mi - INFO - cnn_dropout: 0.11208666003174178
+2025-06-08 05:48:49,033 - llm_dc_mi - INFO - lstm_layers: 2
+2025-06-08 05:48:49,034 - llm_dc_mi - INFO - lstm_units: 77
+2025-06-08 05:48:49,034 - llm_dc_mi - INFO - lstm_dropout: 0.4810444100329826
+2025-06-08 05:48:49,034 - llm_dc_mi - INFO - learning_rate: 0.00157166256098638
+2025-06-08 05:48:49,034 - llm_dc_mi - INFO - 
+lstm_mi:
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - half_life_days: 0.5535821209055471
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - n_days: 1
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - lstm_layers: 2
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - lstm_units: 108
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - dropout_rate: 0.12330022186045
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - learning_rate: 0.0004407063198591469
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - dense_units: 19
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - 
+lstm_cnn_mi:
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - half_life_days: 3.9997261968776727
+2025-06-08 05:48:49,035 - llm_dc_mi - INFO - n_days: 1
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - cnn_filters: 125
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - cnn_kernel: 5
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - cnn_dropout: 0.1027012959658576
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - lstm_layers: 3
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - lstm_units: 84
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - lstm_dropout: 0.1772205812699237
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - learning_rate: 0.005488214753785241
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - 
+Detailed Metrics for lstm_dc:
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - RMSE = $79.07, MAE = $68.70 on next-day close
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - Directional Accuracy: 51.27%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Precision: 45.90%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Recall: 18.30%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Timing Error: 1.33 days
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - 
+Detailed Metrics for lstm_cnn_dc:
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - RMSE = $102.83, MAE = $84.22 on next-day close
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - Directional Accuracy: 50.42%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Precision: 48.21%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Recall: 17.65%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Timing Error: 1.50 days
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - 
+Detailed Metrics for lstm_mi:
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - RMSE = $103.58, MAE = $92.28 on next-day close
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - Directional Accuracy: 50.70%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Precision: 47.83%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Recall: 14.38%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Timing Error: 1.77 days
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - 
+Detailed Metrics for lstm_cnn_mi:
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - RMSE = $134.12, MAE = $113.85 on next-day close
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - Directional Accuracy: 51.55%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Precision: 60.00%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Recall: 1.96%
+2025-06-08 05:48:49,036 - llm_dc_mi - INFO - DC Timing Error: 2.72 days
+
+=== Best Hyperparameters for Each Model ===
+2025-05-31 16:51:02,669 - __main__ - INFO - 
+LSTM-FinBERT:
+2025-05-31 16:51:02,670 - __main__ - INFO - half_life_days: 5.395020559504568
+2025-05-31 16:51:02,670 - __main__ - INFO - n_days: 3
+2025-05-31 16:51:02,670 - __main__ - INFO - lstm_layers: 2
+2025-05-31 16:51:02,670 - __main__ - INFO - lstm_units: 117
+2025-05-31 16:51:02,670 - __main__ - INFO - dropout_rate: 0.14407129223081666
+2025-05-31 16:51:02,670 - __main__ - INFO - learning_rate: 0.005838422691279294
+2025-05-31 16:51:02,670 - __main__ - INFO - dense_units: 21
+2025-05-31 16:51:02,670 - __main__ - INFO - seq_length: 10
+2025-05-31 16:51:02,670 - __main__ - INFO - 
+LSTM-CNN-FinBERT:
+2025-05-31 16:51:02,670 - __main__ - INFO - half_life_days: 8.882169370219955
+2025-05-31 16:51:02,670 - __main__ - INFO - n_days: 2
+2025-05-31 16:51:02,670 - __main__ - INFO - cnn_filters: 100
+2025-05-31 16:51:02,670 - __main__ - INFO - cnn_kernel: 3
+2025-05-31 16:51:02,671 - __main__ - INFO - cnn_dropout: 0.23834037167177627
+2025-05-31 16:51:02,671 - __main__ - INFO - lstm_layers: 4
+2025-05-31 16:51:02,671 - __main__ - INFO - lstm_units: 127
+2025-05-31 16:51:02,671 - __main__ - INFO - lstm_dropout: 0.15108820374229637
+2025-05-31 16:51:02,671 - __main__ - INFO - learning_rate: 0.004024956499467261
+2025-05-31 16:51:02,671 - __main__ - INFO - seq_length: 10
+2025-05-31 16:51:02,671 - __main__ - INFO - 
+LSTM-LLM:
+2025-05-31 16:51:02,671 - __main__ - INFO - half_life_days: 3.0270050295789206
+2025-05-31 16:51:02,671 - __main__ - INFO - n_days: 1
+2025-05-31 16:51:02,671 - __main__ - INFO - lstm_layers: 2
+2025-05-31 16:51:02,671 - __main__ - INFO - lstm_units: 95
+2025-05-31 16:51:02,671 - __main__ - INFO - dropout_rate: 0.12746236742018746
+2025-05-31 16:51:02,671 - __main__ - INFO - learning_rate: 0.003362683535729307
+2025-05-31 16:51:02,671 - __main__ - INFO - dense_units: 49
+2025-05-31 16:51:02,671 - __main__ - INFO - seq_length: 10
+2025-05-31 16:51:02,671 - __main__ - INFO - 
+LSTM-CNN-LLM:
+2025-05-31 16:51:02,671 - __main__ - INFO - half_life_days: 3.680987849192837
+2025-05-31 16:51:02,671 - __main__ - INFO - n_days: 1
+2025-05-31 16:51:02,671 - __main__ - INFO - cnn_filters: 120
+2025-05-31 16:51:02,671 - __main__ - INFO - cnn_kernel: 3
+2025-05-31 16:51:02,671 - __main__ - INFO - cnn_dropout: 0.2386151570639276
+2025-05-31 16:51:02,671 - __main__ - INFO - lstm_layers: 4
+2025-05-31 16:51:02,671 - __main__ - INFO - lstm_units: 47
+2025-05-31 16:51:02,671 - __main__ - INFO - lstm_dropout: 0.16623025323534313
+2025-05-31 16:51:02,671 - __main__ - INFO - learning_rate: 0.0009055273267451925
+2025-05-31 16:51:02,672 - __main__ - INFO - seq_length: 10
+2025-05-31 16:51:02,672 - __main__ - INFO - 
+Detailed Metrics for LSTM-FinBERT:
+2025-05-31 16:51:02,672 - __main__ - INFO - RMSE = $55.51, MAE = $44.20 on next-day close
+2025-05-31 16:51:02,672 - __main__ - INFO - Directional Accuracy: 50.70%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Precision: 100.00%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Recall: 0.65%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Timing Error: 2.75 days
+2025-05-31 16:51:02,672 - __main__ - INFO - 
+Detailed Metrics for LSTM-CNN-FinBERT:
+2025-05-31 16:51:02,672 - __main__ - INFO - RMSE = $118.92, MAE = $99.23 on next-day close
+2025-05-31 16:51:02,672 - __main__ - INFO - Directional Accuracy: 47.04%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Precision: 16.67%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Recall: 0.65%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Timing Error: 2.89 days
+2025-05-31 16:51:02,672 - __main__ - INFO - 
+Detailed Metrics for LSTM-LLM:
+2025-05-31 16:51:02,672 - __main__ - INFO - RMSE = $46.38, MAE = $37.89 on next-day close
+2025-05-31 16:51:02,672 - __main__ - INFO - Directional Accuracy: 52.96%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Precision: 41.36%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Recall: 43.79%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Timing Error: 0.87 days
+2025-05-31 16:51:02,672 - __main__ - INFO - 
+Detailed Metrics for LSTM-CNN-LLM:
+2025-05-31 16:51:02,672 - __main__ - INFO - RMSE = $74.67, MAE = $58.19 on next-day close
+2025-05-31 16:51:02,672 - __main__ - INFO - Directional Accuracy: 49.58%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Precision: 53.33%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Recall: 20.92%
+2025-05-31 16:51:02,672 - __main__ - INFO - DC Timing Error: 1.73 days
+
+=== Best Hyperparameters for Each Model ===
+2025-06-08 08:02:20,098 - llm_full_features - INFO - 
+lstm_full:
+2025-06-08 08:02:20,098 - llm_full_features - INFO - half_life_days: 4.364217824588987
+2025-06-08 08:02:20,099 - llm_full_features - INFO - n_days: 1
+2025-06-08 08:02:20,099 - llm_full_features - INFO - lstm_layers: 5
+2025-06-08 08:02:20,099 - llm_full_features - INFO - lstm_units: 114
+2025-06-08 08:02:20,099 - llm_full_features - INFO - dropout_rate: 0.10201474677290284
+2025-06-08 08:02:20,099 - llm_full_features - INFO - learning_rate: 0.005555122356282922
+2025-06-08 08:02:20,099 - llm_full_features - INFO - dense_units: 22
+2025-06-08 08:02:20,099 - llm_full_features - INFO - 
+lstm_cnn_full:
+2025-06-08 08:02:20,099 - llm_full_features - INFO - half_life_days: 2.4545649148027935
+2025-06-08 08:02:20,099 - llm_full_features - INFO - n_days: 3
+2025-06-08 08:02:20,099 - llm_full_features - INFO - cnn_filters: 83
+2025-06-08 08:02:20,099 - llm_full_features - INFO - cnn_kernel: 3
+2025-06-08 08:02:20,099 - llm_full_features - INFO - cnn_dropout: 0.13527971887757956
+2025-06-08 08:02:20,099 - llm_full_features - INFO - lstm_layers: 2
+2025-06-08 08:02:20,099 - llm_full_features - INFO - lstm_units: 100
+2025-06-08 08:02:20,099 - llm_full_features - INFO - lstm_dropout: 0.22756463072367952
+2025-06-08 08:02:20,099 - llm_full_features - INFO - learning_rate: 0.00021933295509045421
+2025-06-08 08:02:20,099 - llm_full_features - INFO - 
+Detailed Metrics for lstm_full:
+2025-06-08 08:02:20,099 - llm_full_features - INFO - RMSE = $116.39, MAE = $93.47 on next-day close
+2025-06-08 08:02:20,099 - llm_full_features - INFO - Directional Accuracy: 49.30%
+2025-06-08 08:02:20,099 - llm_full_features - INFO - DC Precision: 38.10%
+2025-06-08 08:02:20,099 - llm_full_features - INFO - DC Recall: 5.23%
+2025-06-08 08:02:20,099 - llm_full_features - INFO - DC Timing Error: 1.44 days
+2025-06-08 08:02:20,099 - llm_full_features - INFO - 
+Detailed Metrics for lstm_cnn_full:
+2025-06-08 08:02:20,099 - llm_full_features - INFO - RMSE = $83.71, MAE = $65.57 on next-day close
+2025-06-08 08:02:20,099 - llm_full_features - INFO - Directional Accuracy: 49.58%
+2025-06-08 08:02:20,099 - llm_full_features - INFO - DC Precision: 38.00%
+2025-06-08 08:02:20,099 - llm_full_features - INFO - DC Recall: 24.84%
+2025-06-08 08:02:20,099 - llm_full_features - INFO - DC Timing Error: 1.54 days
+
+=== Best Hyperparameters for Each Model ===
+2025-06-08 04:42:35,752 - llm_ti - INFO - 
+lstm_balanced:
+2025-06-08 04:42:35,753 - llm_ti - INFO - half_life_days: 3.2446945353271794
+2025-06-08 04:42:35,753 - llm_ti - INFO - n_days: 1
+2025-06-08 04:42:35,753 - llm_ti - INFO - lstm_layers: 2
+2025-06-08 04:42:35,753 - llm_ti - INFO - lstm_units: 109
+2025-06-08 04:42:35,753 - llm_ti - INFO - dropout_rate: 0.16046815784413188
+2025-06-08 04:42:35,753 - llm_ti - INFO - learning_rate: 0.004547456298346119
+2025-06-08 04:42:35,753 - llm_ti - INFO - dense_units: 17
+2025-06-08 04:42:35,753 - llm_ti - INFO - 
+lstm_multi:
+2025-06-08 04:42:35,754 - llm_ti - INFO - half_life_days: 1.5193428189716682
+2025-06-08 04:42:35,754 - llm_ti - INFO - n_days: 1
+2025-06-08 04:42:35,754 - llm_ti - INFO - lstm_layers: 2
+2025-06-08 04:42:35,755 - llm_ti - INFO - lstm_units: 126
+2025-06-08 04:42:35,755 - llm_ti - INFO - dropout_rate: 0.1105858133408658
+2025-06-08 04:42:35,755 - llm_ti - INFO - learning_rate: 0.001189791450583103
+2025-06-08 04:42:35,755 - llm_ti - INFO - dense_units: 16
+2025-06-08 04:42:35,755 - llm_ti - INFO - 
+lstm_cnn_balanced:
+2025-06-08 04:42:35,756 - llm_ti - INFO - half_life_days: 0.6398112832004648
+2025-06-08 04:42:35,756 - llm_ti - INFO - n_days: 3
+2025-06-08 04:42:35,756 - llm_ti - INFO - cnn_filters: 80
+2025-06-08 04:42:35,756 - llm_ti - INFO - cnn_kernel: 5
+2025-06-08 04:42:35,756 - llm_ti - INFO - cnn_dropout: 0.10508643810958163
+2025-06-08 04:42:35,756 - llm_ti - INFO - lstm_layers: 2
+2025-06-08 04:42:35,756 - llm_ti - INFO - lstm_units: 50
+2025-06-08 04:42:35,757 - llm_ti - INFO - lstm_dropout: 0.12905513530280704
+2025-06-08 04:42:35,757 - llm_ti - INFO - learning_rate: 0.0005875863644588804
+2025-06-08 04:42:35,757 - llm_ti - INFO - 
+lstm_cnn_multi:
+2025-06-08 04:42:35,757 - llm_ti - INFO - half_life_days: 1.6085828133291975
+2025-06-08 04:42:35,757 - llm_ti - INFO - n_days: 2
+2025-06-08 04:42:35,757 - llm_ti - INFO - cnn_filters: 68
+2025-06-08 04:42:35,757 - llm_ti - INFO - cnn_kernel: 3
+2025-06-08 04:42:35,757 - llm_ti - INFO - cnn_dropout: 0.2582753752641463
+2025-06-08 04:42:35,757 - llm_ti - INFO - lstm_layers: 4
+2025-06-08 04:42:35,757 - llm_ti - INFO - lstm_units: 57
+2025-06-08 04:42:35,757 - llm_ti - INFO - lstm_dropout: 0.4058497643974342
+2025-06-08 04:42:35,757 - llm_ti - INFO - learning_rate: 0.006143806906305161
+2025-06-08 04:42:35,757 - llm_ti - INFO - 
+Detailed Metrics for lstm_balanced:
+2025-06-08 04:42:35,757 - llm_ti - INFO - RMSE = $106.92, MAE = $85.78 on next-day close
+2025-06-08 04:42:35,757 - llm_ti - INFO - Directional Accuracy: 45.35%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Precision: 41.67%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Recall: 3.27%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Timing Error: 2.12 days
+2025-06-08 04:42:35,757 - llm_ti - INFO - 
+Detailed Metrics for lstm_multi:
+2025-06-08 04:42:35,757 - llm_ti - INFO - RMSE = $84.51, MAE = $71.47 on next-day close
+2025-06-08 04:42:35,757 - llm_ti - INFO - Directional Accuracy: 50.14%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Precision: 36.36%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Recall: 10.46%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Timing Error: 1.60 days
+2025-06-08 04:42:35,757 - llm_ti - INFO - 
+Detailed Metrics for lstm_cnn_balanced:
+2025-06-08 04:42:35,757 - llm_ti - INFO - RMSE = $92.31, MAE = $78.30 on next-day close
+2025-06-08 04:42:35,757 - llm_ti - INFO - Directional Accuracy: 48.17%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Precision: 40.24%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Recall: 21.57%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Timing Error: 1.60 days
+2025-06-08 04:42:35,757 - llm_ti - INFO - 
+Detailed Metrics for lstm_cnn_multi:
+2025-06-08 04:42:35,757 - llm_ti - INFO - RMSE = $128.69, MAE = $107.62 on next-day close
+2025-06-08 04:42:35,757 - llm_ti - INFO - Directional Accuracy: 49.58%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Precision: 42.86%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Recall: 3.92%
+2025-06-08 04:42:35,757 - llm_ti - INFO - DC Timing Error: 1.83 days
+
+=== Best Hyperparameters for Each Model ===
+2025-06-08 07:09:57,319 - sentiment_comparison - INFO - 
+lstm_finbert:
+2025-06-08 07:09:57,320 - sentiment_comparison - INFO - half_life_days: 0.7204003617640535
+2025-06-08 07:09:57,320 - sentiment_comparison - INFO - n_days: 2
+2025-06-08 07:09:57,320 - sentiment_comparison - INFO - lstm_layers: 3
+2025-06-08 07:09:57,320 - sentiment_comparison - INFO - lstm_units: 118
+2025-06-08 07:09:57,320 - sentiment_comparison - INFO - dropout_rate: 0.11441435339921377
+2025-06-08 07:09:57,320 - sentiment_comparison - INFO - learning_rate: 0.004076333385322609
+2025-06-08 07:09:57,320 - sentiment_comparison - INFO - dense_units: 17
+2025-06-08 07:09:57,320 - sentiment_comparison - INFO - 
+lstm_cnn_finbert:
+2025-06-08 07:09:57,321 - sentiment_comparison - INFO - half_life_days: 4.8097189550479005
+2025-06-08 07:09:57,321 - sentiment_comparison - INFO - n_days: 1
+2025-06-08 07:09:57,321 - sentiment_comparison - INFO - cnn_filters: 128
+2025-06-08 07:09:57,321 - sentiment_comparison - INFO - cnn_kernel: 3
+2025-06-08 07:09:57,321 - sentiment_comparison - INFO - cnn_dropout: 0.1545168953365813
+2025-06-08 07:09:57,321 - sentiment_comparison - INFO - lstm_layers: 2
+2025-06-08 07:09:57,321 - sentiment_comparison - INFO - lstm_units: 112
+2025-06-08 07:09:57,322 - sentiment_comparison - INFO - lstm_dropout: 0.14552448629866085
+2025-06-08 07:09:57,322 - sentiment_comparison - INFO - learning_rate: 1.3336745160479108e-05
+2025-06-08 07:09:57,322 - sentiment_comparison - INFO - 
+lstm_llm:
+2025-06-08 07:09:57,322 - sentiment_comparison - INFO - half_life_days: 1.1666025767635197
+2025-06-08 07:09:57,322 - sentiment_comparison - INFO - n_days: 1
+2025-06-08 07:09:57,322 - sentiment_comparison - INFO - lstm_layers: 5
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - lstm_units: 126
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - dropout_rate: 0.37934844186109506
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - learning_rate: 1.7988588725597628e-05
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - dense_units: 35
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - 
+lstm_cnn_llm:
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - half_life_days: 5.529161725499567
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - n_days: 1
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - cnn_filters: 124
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - cnn_kernel: 5
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - cnn_dropout: 0.3654507820450992
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - lstm_layers: 3
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - lstm_units: 84
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - lstm_dropout: 0.33695203595373846
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - learning_rate: 0.00012476261187429344
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - 
+Detailed Metrics for lstm_finbert:
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - RMSE = $51.34, MAE = $39.58 on next-day close
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - Directional Accuracy: 50.14%
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - DC Precision: 38.46%
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - DC Recall: 16.34%
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - DC Timing Error: 1.43 days
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - 
+Detailed Metrics for lstm_cnn_finbert:
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - RMSE = $71.97, MAE = $62.90 on next-day close
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - Directional Accuracy: 50.70%
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - DC Precision: 48.65%
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - DC Recall: 11.76%
+2025-06-08 07:09:57,323 - sentiment_comparison - INFO - DC Timing Error: 1.74 days
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - 
+Detailed Metrics for lstm_llm:
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - RMSE = $120.05, MAE = $108.92 on next-day close
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - Directional Accuracy: 47.61%
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - DC Precision: 46.08%
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - DC Recall: 30.72%
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - DC Timing Error: 1.31 days
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - 
+Detailed Metrics for lstm_cnn_llm:
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - RMSE = $85.63, MAE = $72.74 on next-day close
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - Directional Accuracy: 47.89%
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - DC Precision: 42.53%
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - DC Recall: 24.18%
+2025-06-08 07:09:57,324 - sentiment_comparison - INFO - DC Timing Error: 1.41 days

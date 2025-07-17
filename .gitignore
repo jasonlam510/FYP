@@ -5,7 +5,7 @@ backup/
 *.png
 *.h5
 *.keras
-
+*.html
 
 # Created by https://www.gitignore.io/api/macos,linux,django,python,pycharm
 .idea/

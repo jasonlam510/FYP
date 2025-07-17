@@ -23,29 +23,14 @@ def aggregate_news_price_rolling_llm(
     Returns:
         pd.DataFrame: Aggregated data with one-hot encoded event types, price data, and news counts
     """
-    # Ensure datetime
+    # Create copies of input dataframes
     news_df = news_df.copy()
     price_df = price_df.copy()
-    news_df['date'] = pd.to_datetime(news_df['date'], utc=True)
-    price_df['date'] = pd.to_datetime(price_df['date'], utc=True)
-
-    # Prepare price data - convert dates to 4 PM ET trading days
-    price_df['trading_day'] = price_df['date'].apply(
-        lambda x: pd.Timestamp(
-            year=x.year,
-            month=x.month,
-            day=x.day,
-            hour=16,
-            minute=0,
-            second=0,
-            tz='US/Eastern'
-        )
-    )
 
     # Prepare output list
     agg_list = []
 
-    for trading_day in price_df['trading_day']:
+    for trading_day in price_df['date']:
         # Define window: n_days before (inclusive)
         window_start = trading_day - pd.Timedelta(days=n_days-1)
         window_end = trading_day
@@ -78,7 +63,7 @@ def aggregate_news_price_rolling_llm(
 
         # Aggregate by specified method for this trading day
         agg_row = weighted_dummies.agg(agg_method)
-        agg_row['trading_day'] = trading_day
+        agg_row['date'] = trading_day
         agg_row['news_count'] = news_count
 
         # Add news count per event type if requested
@@ -96,12 +81,15 @@ def aggregate_news_price_rolling_llm(
     merged_df = pd.merge(
         price_df,
         news_agg,
-        on='trading_day',
+        on='date',
         how='left'
     ).fillna(0.0)
 
-    # Sort by trading day
-    merged_df = merged_df.sort_values('trading_day').reset_index(drop=True)
+    # Ensure we only keep rows that exist in the original price_df
+    merged_df = merged_df[merged_df['date'].isin(price_df['date'])]
+
+    # Sort by date
+    merged_df = merged_df.sort_values('date').reset_index(drop=True)
 
     return merged_df
 
@@ -130,23 +118,10 @@ def aggregate_news_price_rolling_finbert(
     news_df['date'] = pd.to_datetime(news_df['date'], utc=True)
     price_df['date'] = pd.to_datetime(price_df['date'], utc=True)
 
-    # Prepare price data - convert dates to 4 PM ET trading days
-    price_df['trading_day'] = price_df['date'].apply(
-        lambda x: pd.Timestamp(
-            year=x.year,
-            month=x.month,
-            day=x.day,
-            hour=16,
-            minute=0,
-            second=0,
-            tz='US/Eastern'
-        )
-    )
-
     # Prepare output list
     agg_list = []
 
-    for trading_day in price_df['trading_day']:
+    for trading_day in price_df['date']:
         # Define window: n_days before (inclusive)
         window_start = trading_day - pd.Timedelta(days=n_days-1)
         window_end = trading_day
@@ -173,7 +148,7 @@ def aggregate_news_price_rolling_finbert(
 
         # Aggregate by specified method for this trading day
         agg_row = news_window[[f'weighted_{col}' for col in sentiment_columns]].agg(agg_method)
-        agg_row['trading_day'] = trading_day
+        agg_row['date'] = trading_day
         agg_row['news_count'] = news_count
 
         agg_list.append(agg_row)
@@ -185,12 +160,12 @@ def aggregate_news_price_rolling_finbert(
     merged_df = pd.merge(
         price_df,
         news_agg,
-        on='trading_day',
+        on='date',
         how='left'
     ).fillna(0.0)
 
-    # Sort by trading day
-    merged_df = merged_df.sort_values('trading_day').reset_index(drop=True)
+    # Sort by date
+    merged_df = merged_df.sort_values('date').reset_index(drop=True)
 
     return merged_df
 
@@ -207,26 +182,18 @@ def combine_mi_price(mi_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.DataFram
     """
     # Create a copy of price_df
     combined_df = price_df.copy()
+        
+    # Merge on date
+    result = pd.merge(combined_df, mi_df, on='date', how='left')
     
-    # Reset index of mi_df and rename to 'date'
-    mi_df = mi_df.reset_index()
-    mi_df = mi_df.rename(columns={'index': 'date'})
+    # Forward fill missing values
+    result = result.fillna(method='ffill')
     
-    # Convert mi_df date to UTC and normalize to midnight
-    mi_df['date'] = pd.to_datetime(mi_df['date'], utc=True).dt.normalize()
+    # Ensure we only keep rows that exist in the original price_df
+    result = result[result['date'].isin(combined_df['date'])]
     
-    # Set date as index for both dataframes
-    combined_df.set_index('date', inplace=True)
-    mi_df.set_index('date', inplace=True)
-    
-    # Reindex mi_df to match price_df's index and forward fill values
-    mi_df = mi_df.reindex(combined_df.index, method='ffill')
-    
-    # Concatenate the dataframes
-    result = pd.concat([combined_df, mi_df], axis=1)
-    
-    # Reset index to get date back as a column
-    result = result.reset_index()
+    # Sort by date
+    result = result.sort_values('date')
     
     return result
 

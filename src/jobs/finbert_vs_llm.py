@@ -1,6 +1,6 @@
+from datetime import datetime
 import pandas as pd
 import numpy as np
-
 import os
 import sys
 from pathlib import Path
@@ -8,16 +8,15 @@ project_root = Path.cwd() # Get the current directory
 sys.path.append(str(project_root))
 
 # Set job name for logging and plots
-JOB_NAME = "finbert_vs_llm_comparison"
+START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
+os.environ['START_TIME'] = START_TIME
+JOB_NAME = f"finbert_vs_llm"
 os.environ['JOB_NAME'] = JOB_NAME
 
 from src.data.news import NewsData
 from src.data.price import PriceData
 from src.model.train_model import train_model, plot_results, build_cnn_lstm_model, build_lstm_model
-from src.utils.combine import (
-    aggregate_news_price_rolling_finbert,
-    aggregate_news_price_rolling_llm
-)
+from src.utils.combine import aggregate_news_price_rolling_finbert, aggregate_news_price_rolling_llm
 from src.utils.logger import get_logger
 from src.config import (
     EVENT_TYPES,
@@ -27,7 +26,7 @@ from src.config import (
     N_DAYS_RANGE
 )
 
-logger = get_logger(__name__)
+logger = get_logger(JOB_NAME)
 
 def print_best_hyperparameters(results):
     """Print the best hyperparameters for each model."""
@@ -37,13 +36,13 @@ def print_best_hyperparameters(results):
         for param_name, param_value in result['best_params'].items():
             logger.info(f"{param_name}: {param_value}")
 
-def run_comparison():
+def run_comparison(use_existing_storage=False):
     # Load data
     logger.info("Loading data...")
     news_data = NewsData()
     price_data = PriceData()
 
-    # Get FinBERT and LLM datasets
+    # Get datasets
     finbert_df = news_data.get_finbert_df()
     llm_df = news_data.get_llm_df()
     price_df = price_data.get_price_df()
@@ -51,87 +50,56 @@ def run_comparison():
     # Dictionary to store results
     results = {}
 
-    # 1. Train LSTM with FinBERT
-    logger.info("Training LSTM with FinBERT data...")
-    finbert_aggregated = aggregate_news_price_rolling_finbert(
-        finbert_df, price_df, n_days=3, half_life_days=1.5
-    )
-    lstm_finbert_model, lstm_finbert_history, lstm_finbert_pred, lstm_finbert_actual, test_dates, lstm_finbert_metrics, lstm_finbert_params = train_model(
-        finbert_df, price_df, SEQ_LENGTH, N_TRIALS, 
-        build_model_fn=build_lstm_model,
-        half_life_range=HALF_LIFE_RANGE,
-        n_days_range=N_DAYS_RANGE
-    )
-    results['LSTM-FinBERT'] = {
-        'predictions': lstm_finbert_pred,
-        'actual': lstm_finbert_actual,
-        'test_dates': test_dates,
-        'metrics': lstm_finbert_metrics,
-        'best_params': lstm_finbert_params
+    # Define sub-jobs
+    sub_jobs = {
+        'lstm_finbert': {
+            'model_fn': build_lstm_model,
+            'news_df': finbert_df
+        },
+        'lstm_cnn_finbert': {
+            'model_fn': build_cnn_lstm_model,
+            'news_df': finbert_df
+        },
+        'lstm_llm': {
+            'model_fn': build_lstm_model,
+            'news_df': llm_df
+        },
+        'lstm_cnn_llm': {
+            'model_fn': build_cnn_lstm_model,
+            'news_df': llm_df
+        }
     }
 
-    # 2. Train LSTM-CNN with FinBERT
-    logger.info("Training LSTM-CNN with FinBERT data...")
-    lstm_cnn_finbert_model, lstm_cnn_finbert_history, lstm_cnn_finbert_pred, lstm_cnn_finbert_actual, test_dates, lstm_cnn_finbert_metrics, lstm_cnn_finbert_params = train_model(
-        finbert_df, price_df, SEQ_LENGTH, N_TRIALS, 
-        build_model_fn=build_cnn_lstm_model,
-        half_life_range=HALF_LIFE_RANGE,
-        n_days_range=N_DAYS_RANGE
-    )
-    results['LSTM-CNN-FinBERT'] = {
-        'predictions': lstm_cnn_finbert_pred,
-        'actual': lstm_cnn_finbert_actual,
-        'test_dates': test_dates,
-        'metrics': lstm_cnn_finbert_metrics,
-        'best_params': lstm_cnn_finbert_params
-    }
+    # Train each sub-job
+    for sub_job_name, config in sub_jobs.items():
+        logger.info(f"\nTraining {sub_job_name}...")
+        os.environ['SUB_JOB_NAME'] = sub_job_name
 
-    # 3. Train LSTM with LLM
-    logger.info("Training LSTM with LLM data...")
-    llm_aggregated = aggregate_news_price_rolling_llm(
-        llm_df, price_df, EVENT_TYPES, n_days=3, half_life_days=1.5
-    )
-    lstm_llm_model, lstm_llm_history, lstm_llm_pred, lstm_llm_actual, test_dates, lstm_llm_metrics, lstm_llm_params = train_model(
-        llm_df, price_df, SEQ_LENGTH, N_TRIALS, 
-        build_model_fn=build_lstm_model,
-        half_life_range=HALF_LIFE_RANGE,
-        n_days_range=N_DAYS_RANGE
-    )
-    results['LSTM-LLM'] = {
-        'predictions': lstm_llm_pred,
-        'actual': lstm_llm_actual,
-        'test_dates': test_dates,
-        'metrics': lstm_llm_metrics,
-        'best_params': lstm_llm_params
-    }
-
-    # 4. Train LSTM-CNN with LLM
-    logger.info("Training LSTM-CNN with LLM data...")
-    lstm_cnn_llm_model, lstm_cnn_llm_history, lstm_cnn_llm_pred, lstm_cnn_llm_actual, test_dates, lstm_cnn_llm_metrics, lstm_cnn_llm_params = train_model(
-        llm_df, price_df, SEQ_LENGTH, N_TRIALS, 
-        build_model_fn=build_cnn_lstm_model,
-        half_life_range=HALF_LIFE_RANGE,
-        n_days_range=N_DAYS_RANGE
-    )
-    results['LSTM-CNN-LLM'] = {
-        'predictions': lstm_cnn_llm_pred,
-        'actual': lstm_cnn_llm_actual,
-        'test_dates': test_dates,
-        'metrics': lstm_cnn_llm_metrics,
-        'best_params': lstm_cnn_llm_params
-    }
+        model, history, pred, actual, test_dates, metrics, params = train_model(
+            news_df=config['news_df'],
+            price_df=price_df,
+            seq_length=SEQ_LENGTH,
+            n_trials=N_TRIALS,
+            build_model_fn=config['model_fn'],
+            half_life_range=HALF_LIFE_RANGE,
+            n_days_range=N_DAYS_RANGE,
+            use_existing_storage=use_existing_storage
+        )
+        
+        results[sub_job_name] = {
+            'predictions': pred,
+            'actual': actual,
+            'test_dates': test_dates,
+            'metrics': metrics,
+            'best_params': params
+        }
 
     # Plot results
-    predictions_list = [
-        results['LSTM-FinBERT']['predictions'],
-        results['LSTM-CNN-FinBERT']['predictions'],
-        results['LSTM-LLM']['predictions'],
-        results['LSTM-CNN-LLM']['predictions']
-    ]
-    line_names = ['LSTM-FinBERT', 'LSTM-CNN-FinBERT', 'LSTM-LLM', 'LSTM-CNN-LLM']
-    actual = results['LSTM-FinBERT']['actual']  # All actual values should be the same
-    test_dates = results['LSTM-FinBERT']['test_dates']
-    metrics_list = [results[model]['metrics'] for model in line_names]
+    predictions_list = [results[model]['predictions'] for model in sub_jobs.keys()]
+    line_names = list(sub_jobs.keys())
+    actual = results['lstm_finbert']['actual']  # All actual values should be the same
+    test_dates = results['lstm_finbert']['test_dates']
+    metrics_list = [results[model]['metrics'] for model in sub_jobs.keys()]
 
     plot_results(
         predictions_list=predictions_list,
@@ -156,4 +124,9 @@ def run_comparison():
         logger.info(f"DC Timing Error: {metrics['dc_timing_error']:.2f} days")
 
 if __name__ == "__main__":
-    run_comparison() 
+    try:
+        # You can set use_existing_storage=True to use existing Optuna storage
+        run_comparison(use_existing_storage=True)
+    except Exception as e:
+        logger.error(f"Error in {JOB_NAME}: {e}")
+        raise e 

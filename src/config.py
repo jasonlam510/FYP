@@ -18,8 +18,8 @@ EVENT_TYPES = [
 
 # Model training parameters
 SEQ_LENGTH = 10
-N_TRIALS = 30
-HALF_LIFE_RANGE = (0.5, 8.0)
+N_TRIALS = 1
+HALF_LIFE_RANGE = (0.5, 6)
 N_DAYS_RANGE = (1, 3)
 
 # Technical Indicators for Price Data
@@ -36,7 +36,6 @@ BALANCED_INDICATORS = [
     {'name': 'vortex', 'window': 14},      # Vortex Indicator
     {'name': 'obv'},                       # On-Balance Volume
     {'name': 'mfi', 'window': 14},         # Money Flow Index
-    {'name': 'vwap'}                       # Volume-Weighted Average Price
 ]
 
 MULTI_TIMEFRAME_INDICATORS = [
@@ -56,5 +55,4 @@ MULTI_TIMEFRAME_INDICATORS = [
     {'name': 'ma',         'window': 200},  # 200-period SMA for very long-term trend
     {'name': 'cci',        'window': 50},   # Commodity Channel Index for cyclical deviations
     {'name': 'obv'},                       # On-Balance Volume (cumulative) for volume confirmation
-    {'name': 'vwap'}                       # Volume-Weighted Average Price for intraday anchoring
 ] 

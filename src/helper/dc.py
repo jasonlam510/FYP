@@ -60,8 +60,9 @@ def add_dc_event_features(df: pd.DataFrame,
       - momentum
       - volume_spike_ratio
     """
+    # Create a copy and set index without modifying original
     price_df = df.copy()
-    price_df.set_index('date', inplace=True)
+    price_df = price_df.set_index('date')
 
     # 1) Detect events
     events = _detect_atr_dc_events(price_df, atr_window, k)
@@ -101,7 +102,12 @@ def add_dc_event_features(df: pd.DataFrame,
     price_df['volume_spike_ratio'] = price_df['volume'] / price_df['vol_ma']
 
     # clean up helper column
-    price_df.drop(columns=['vol_ma'], inplace=True)
+    price_df = price_df.drop(columns=['vol_ma'])
 
-    price_df.reset_index(inplace=True)
+    # Reset index and ensure date column is preserved
+    price_df = price_df.reset_index()
+    
+    # Ensure the date column is in the same format as the input
+    price_df['date'] = pd.to_datetime(price_df['date'])
+    
     return price_df

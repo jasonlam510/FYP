@@ -23,9 +23,9 @@ class NewsData():
         self.news_df = self.news_df.sort_values('date')
         logger.info("sorted by date")
 
-        # Convert to UTC
-        self.news_df['date'] = pd.to_datetime(self.news_df['date'], utc=True)
-        logger.info("datetime is converted to UTC")
+        # Convert to UTC and normalize to midnight
+        self.news_df['date'] = pd.to_datetime(self.news_df['date'], utc=True).dt.normalize()
+        logger.info("datetime is converted to UTC and normalized to midnight")
     
     def _split_data(self):
         """Split the data into FinBERT and LLM datasets."""

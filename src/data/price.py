@@ -24,9 +24,9 @@ class PriceData():
         self.price_df = self.price_df.sort_values('date')
         logger.info("Sorted by date")
 
-        # Convert datetime to UTC
-        self.price_df['date'] = pd.to_datetime(self.price_df['date'], utc=True)
-        logger.info("datetime is converted to UTC")
+        # Convert datetime to UTC and normalize to midnight
+        self.price_df['date'] = pd.to_datetime(self.price_df['date'], utc=True).dt.normalize()
+        logger.info("datetime is converted to UTC and normalized to midnight")
     
     def get_price_df(self) -> pd.DataFrame:
         """Get the price dataset."""

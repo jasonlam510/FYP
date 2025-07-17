@@ -1,9 +1,9 @@
 import pandas as pd
 from ta.trend import SMAIndicator, EMAIndicator, MACD
-from ta.momentum import RSIIndicator, StochasticOscillator
+from ta.momentum import RSIIndicator, StochasticOscillator, ROCIndicator
 from ta.volatility import BollingerBands, AverageTrueRange
-from ta.volume import OnBalanceVolumeIndicator, MFIIndicator
-from ta.trend import CCIIndicator
+from ta.volume import OnBalanceVolumeIndicator, MFIIndicator, VolumeWeightedAveragePrice
+from ta.trend import SMAIndicator, EMAIndicator, MACD, CCIIndicator, ADXIndicator, VortexIndicator
 from typing import List, Dict
 
 def calculate_technical_indicators(price_df: pd.DataFrame, indicators: List[Dict]) -> pd.DataFrame:
@@ -11,21 +11,11 @@ def calculate_technical_indicators(price_df: pd.DataFrame, indicators: List[Dict
     Calculate technical indicators for the given price data using ta library.
     
     Args:
-        df (pd.DataFrame): Price data with OHLCV columns
+        price_df (pd.DataFrame): Price data with OHLCV columns
         indicators (List[Dict]): List of indicator configurations
-            Each dict should have:
-            - name: str, name of the indicator
-            - window: int (optional), window size for the indicator
-            
+        
     Returns:
         pd.DataFrame: DataFrame with calculated indicators
-        
-    Example:
-        indicators = [
-            {'name': 'bb', 'window': 20},
-            {'name': 'rsi', 'window': 14}
-        ]
-        df_with_indicators = calculate_technical_indicators(price_df, indicators)
     """
     if price_df is None:
         raise ValueError("DataFrame is not initialized")
@@ -74,6 +64,17 @@ def calculate_technical_indicators(price_df: pd.DataFrame, indicators: List[Dict
                 df[f'stoch_k_{window}'] = stoch.stoch()
                 df[f'stoch_d_{window}'] = stoch.stoch_signal()
                 
+            elif name == 'adx':
+                adx = ADXIndicator(high=df['high'], low=df['low'], close=df['close'], window=window)
+                df[f'adx_{window}'] = adx.adx()
+                df[f'di_pos_{window}'] = adx.adx_pos()
+                df[f'di_neg_{window}'] = adx.adx_neg()
+                
+            elif name == 'vortex':
+                vortex = VortexIndicator(high=df['high'], low=df['low'], close=df['close'], window=window)
+                df[f'vortex_pos_{window}'] = vortex.vortex_indicator_pos()
+                df[f'vortex_neg_{window}'] = vortex.vortex_indicator_neg()
+                
             elif name == 'obv':
                 obv = OnBalanceVolumeIndicator(close=df['close'], volume=df['volume'])
                 df['obv'] = obv.on_balance_volume()
@@ -81,7 +82,20 @@ def calculate_technical_indicators(price_df: pd.DataFrame, indicators: List[Dict
             elif name == 'mfi':
                 mfi = MFIIndicator(high=df['high'], low=df['low'], close=df['close'], volume=df['volume'], window=window)
                 df[f'mfi_{window}'] = mfi.money_flow_index()
+                
+            elif name == 'vwap':
+                vwap = VolumeWeightedAveragePrice(high=df['high'], low=df['low'], close=df['close'], volume=df['volume'])
+                df['vwap'] = vwap.volume_weighted_average_price()
+
+            elif name == 'roc':
+                roc = ROCIndicator(close=df['close'], window=window)
+                df[f'roc_{window}'] = roc.roc()
+
+            else:
+                raise ValueError(f"Unknown indicator: {name}")
+                
         except Exception as e:
-            raise Exception(f"Error calculating {name} indicator: {str(e)}")
+            raise e
+            # Dont continue with next indicator if one fails
     
     return df

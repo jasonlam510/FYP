@@ -22,7 +22,7 @@ class MIData():
     def __init__(self):
         self.mi_df = None
         self._import_Data()
-        # self._process()
+        self._process()
     
     def _import_Data(self):
         """Import market impact data from local file or fetch from API if not available."""
@@ -51,12 +51,17 @@ class MIData():
             raise
     
     def _process(self):
+        # Reset index of mi_df and rename to 'date'
+        self.mi_df = self.mi_df.reset_index()
+        self.mi_df = self.mi_df.rename(columns={'index': 'date'})
+
         # Sort by date
         self.mi_df = self.mi_df.sort_values('date')
         logger.info("Sorted by date")
 
-        # Convert datetime to UTC
-        self.mi_df['date'] = pd.to_datetime(self.mi_df['date'], utc=True)
+        # Convert datetime to UTC and normalize to midnight
+        self.mi_df['date'] = pd.to_datetime(self.mi_df['date'], utc=True).dt.normalize()
+        logger.info("datetime is converted to UTC and normalized to midnight")
     
     def _fetch(self):
         series_list = [
